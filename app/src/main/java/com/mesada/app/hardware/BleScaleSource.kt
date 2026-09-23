@@ -95,7 +95,9 @@ class BleScaleSource(
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     try { g.close() } catch (e: SecurityException) { }
-                    gatt = null
+                    // Solo pisar la referencia si sigue siendo la conexión activa: un callback
+                    // tardío de un gatt viejo no debe borrar una conexión nueva ya en curso.
+                    if (g === gatt) gatt = null
                     _connectionState.value = if (settings.scaleEnabled.value) ScaleConnectionState.DISCONNECTED else ScaleConnectionState.DISABLED
                 }
             }
