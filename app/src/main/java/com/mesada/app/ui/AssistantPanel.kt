@@ -66,7 +66,11 @@ fun AssistantPanel(
 ) {
     var typed by remember { mutableStateOf("") }
     val list = rememberLazyListState()
-    LaunchedEffect(ui.messages.size) { if (ui.messages.isNotEmpty()) list.animateScrollToItem(ui.messages.size) }
+    LaunchedEffect(ui.messages.size, ui.mode) {
+        if (ui.messages.isEmpty()) return@LaunchedEffect
+        val hasTrailingBubble = (ui.mode == VoiceMode.LISTENING && ui.partial.isNotBlank()) || ui.mode == VoiceMode.THINKING
+        list.animateScrollToItem(ui.messages.size - 1 + if (hasTrailingBubble) 1 else 0)
+    }
 
     Surface(modifier.fillMaxHeight().widthIn(max = 460.dp).fillMaxWidth(), color = MaterialTheme.colorScheme.surface,
         shadowElevation = 16.dp, tonalElevation = 0.dp) {

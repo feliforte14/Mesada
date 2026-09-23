@@ -39,6 +39,8 @@ import com.mesada.app.ui.ScreenHeader
 import com.mesada.app.ui.kcal
 import kotlin.math.roundToInt
 
+private data class GoalRow(val field: GoalField, val label: String, val value: String, val step: Int)
+
 @Composable
 fun KitchenScreen(
     day: DayState,
@@ -125,18 +127,18 @@ fun KitchenScreen(
                     }
                     Spacer(Modifier.height(6.dp))
                     listOf(
-                        Triple(GoalField.KCAL, "Calorías", "${day.goals.kcal} kcal") to 100,
-                        Triple(GoalField.PROTEIN, "Proteína", "${day.goals.protein} g") to 5,
-                        Triple(GoalField.CARBS, "Hidratos", "${day.goals.carbs} g") to 10,
-                        Triple(GoalField.FAT, "Grasas", "${day.goals.fat} g") to 5,
-                    ).forEachIndexed { i, (goal, step) ->
+                        GoalRow(GoalField.KCAL, "Calorías", "${day.goals.kcal} kcal", 100),
+                        GoalRow(GoalField.PROTEIN, "Proteína", "${day.goals.protein} g", 5),
+                        GoalRow(GoalField.CARBS, "Hidratos", "${day.goals.carbs} g", 10),
+                        GoalRow(GoalField.FAT, "Grasas", "${day.goals.fat} g", 5),
+                    ).forEachIndexed { i, row ->
                         if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                         Row(Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(goal.second, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                            RoundButton("−", "Bajar ${goal.second}", { onGoal(goal.first, -step) })
-                            Text(goal.third, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center,
+                            Text(row.label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                            RoundButton("−", "Bajar ${row.label}", { onGoal(row.field, -row.step) })
+                            Text(row.value, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center,
                                 modifier = Modifier.width(100.dp))
-                            RoundButton("+", "Subir ${goal.second}", { onGoal(goal.first, step) })
+                            RoundButton("+", "Subir ${row.label}", { onGoal(row.field, row.step) })
                         }
                     }
                 }

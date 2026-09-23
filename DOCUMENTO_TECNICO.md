@@ -5,6 +5,28 @@ avanza. Formato: una entrada por sesión de trabajo, ordenadas de más reciente 
 
 ---
 
+## 2026-09-29 — Code review de ui/ y voice/: 2 hallazgos corregidos
+
+Tercer code review de la serie, cerrando la cobertura del código existente (ya se habían
+revisado `hardware/` y `assistant/data/domain/`). `voice/` salió sin hallazgos.
+
+### Hallazgos y fix
+| Hallazgo | Causa | Fix |
+|---|---|---|
+| El panel del asistente podía no hacer scroll al último mensaje (índice fuera de rango) | `AssistantPanel`: `LaunchedEffect(ui.messages.size) { list.animateScrollToItem(ui.messages.size) }` — ese índice solo es válido cuando además hay una burbuja de "escuchando"/"pensando" al final de la lista; si un mensaje se agrega con `mode == IDLE` (ej. un error de reconocimiento de voz), la lista tiene exactamente `messages.size` ítems y el último índice válido es `messages.size - 1`, no `messages.size`. | El `LaunchedEffect` ahora también depende de `ui.mode` y calcula si hay burbuja final (`LISTENING` con parcial no vacío, o `THINKING`) para decidir si el índice es `messages.size - 1` o `messages.size`. |
+| Legibilidad: `Triple` dentro de `Pair` en la lista de objetivos de `KitchenScreen` | `listOf(Triple(GoalField.KCAL, "Calorías", "...") to 100, ...).forEachIndexed { i, (goal, step) -> ... goal.first/goal.second/goal.third ... }` — no era un bug (el compilador resuelve bien `Triple.first/second/third`), pero el nombre `goal` en realidad apunta al `Triple` completo, no a un `GoalField`, y agregar/reordenar campos no daría error de compilación. | Se reemplazó por una `data class GoalRow(field, label, value, step)` privada del archivo — mismo comportamiento, referencias explícitas (`row.field`, `row.label`, etc.). |
+
+### Archivos tocados
+- `ui/AssistantPanel.kt`, `ui/screens/KitchenScreen.kt`.
+
+### Verificación
+- `./gradlew :app:compileDebugKotlin` compila sin errores.
+
+Con esta entrada quedó cubierto por code review todo el código Kotlin existente al momento
+(`hardware/`, `assistant/`, `data/`, `domain/`, `ui/`, `voice/`).
+
+---
+
 ## 2026-09-28 — Code review del resto del código (assistant/data/domain/ui/voice): 4 hallazgos corregidos
 
 Segundo code review (nivel high) de la sesión, esta vez apuntado explícitamente a un diff
