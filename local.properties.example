@@ -1,0 +1,12 @@
+# Copiá este archivo como local.properties (NO lo subas a git).
+sdk.dir=/ruta/a/tu/Android/Sdk
+
+# Opción A (solo desarrollo): la app llama directo a la API de Anthropic.
+anthropic.apiKey=sk-ant-...
+assistant.baseUrl=https://api.anthropic.com
+
+# Opción B (producción): tu backend agrega la clave y reenvía a /v1/messages.
+# anthropic.apiKey=
+# assistant.baseUrl=https://tu-backend.com
+
+claude.model=claude-haiku-4-5-20251001
