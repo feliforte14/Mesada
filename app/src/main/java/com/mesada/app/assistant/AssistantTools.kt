@@ -11,6 +11,8 @@ import com.mesada.app.domain.KitchenTimer
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.add
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -124,7 +126,7 @@ class AssistantTools(
             putJsonObject("comidas") {
                 Meal.entries.forEach { m ->
                     putJsonArray(m.key) {
-                        day.meal(m).forEach { add(kotlinx.serialization.json.JsonPrimitive(
+                        day.meal(m).forEach { add(JsonPrimitive(
                             "${it.displayName} (${it.qtyLabel}, ${it.macros.kcal.roundToInt()} kcal)")) }
                     }
                 }
@@ -142,13 +144,13 @@ class AssistantTools(
             putJsonObject("input_schema") {
                 put("type", "object")
                 putJsonObject("properties", props)
-                putJsonArray("required") { required.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) } }
+                putJsonArray("required") { required.forEach { add(JsonPrimitive(it)) } }
             }
         }
 
     private fun JsonObjectBuilder.enumProp(name: String, values: List<String>) = putJsonObject(name) {
         put("type", "string")
-        putJsonArray("enum") { values.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) } }
+        putJsonArray("enum") { values.forEach { add(JsonPrimitive(it)) } }
     }
     private fun JsonObjectBuilder.numProp(name: String, desc: String? = null) = putJsonObject(name) {
         put("type", "number"); desc?.let { put("description", it) }

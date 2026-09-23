@@ -5,6 +5,37 @@ avanza. Formato: una entrada por sesión de trabajo, ordenadas de más reciente 
 
 ---
 
+## 2026-09-28 — Code review del resto del código (assistant/data/domain/ui/voice): 4 hallazgos corregidos
+
+Segundo code review (nivel high) de la sesión, esta vez apuntado explícitamente a un diff
+`<empty-tree>..HEAD` para que cubriera el código heredado (no solo el último commit) —
+el review anterior solo había mirado `hardware/` porque interpretó el path como diff contra
+`HEAD~1`. Encontró 4 problemas reales, ya corregidos.
+
+### Hallazgos y fix
+| Hallazgo | Causa | Fix |
+|---|---|---|
+| `quitar_alimento` por voz podía borrar el alimento equivocado | `Repository.removeByName`: si Claude mandaba `nombre` vacío o en blanco en el tool call, `"cualquier_cosa".contains("")` es `true` en Kotlin, así que matcheaba **cualquier** entrada de esa comida y borraba la última agregada en vez de fallar. | `removeByName` corta temprano y devuelve `null` (sin match) si la query queda en blanco después de `trim()`. |
+| Fuga del `ToneGenerator` nativo si la app se cierra justo cuando termina el temporizador | `KitchenTimer.alarm()` llamaba a `tone.release()` como última línea del bloque, no en un `finally` — si la corrutina se cancelaba a mitad de los 3 beeps (ej. `MesadaViewModel.onCleared()`), `release()` nunca se ejecutaba. | `tone.release()` movido a un bloque `finally` alrededor del `repeat`. |
+| Cancelar el asistente de voz mientras "piensa" no cancelaba el pedido HTTP real | `ClaudeClient.createMessage` usaba `http.newCall(request).execute()` (bloqueante) dentro de `withContext(Dispatchers.IO)` — cancelar la corrutina de Kotlin no cancela una llamada bloqueante de OkHttp en curso, así que el request seguía viajando en la red aunque la UI ya mostrara `IDLE`. | Reescrito con `call.enqueue(...)` + `suspendCancellableCoroutine` + `cont.invokeOnCancellation { call.cancel() }` — ahora cancelar el `Job` cancela la conexión HTTP real. |
+| Ruido de legibilidad en `AssistantTools.kt` | Tres lugares escribían `add(kotlinx.serialization.json.JsonPrimitive(it))` con el nombre completo en vez de importar el extension `add` de kotlinx.serialization, inconsistente con el resto del archivo (que sí importa `put`, `putJsonArray`, etc.). | Se agregó `import kotlinx.serialization.json.add` y `import kotlinx.serialization.json.JsonPrimitive`; las tres líneas quedaron como `add(JsonPrimitive(it))`. |
+
+### Archivos tocados
+- `data/Repository.kt`, `domain/KitchenTimer.kt`, `assistant/ClaudeClient.kt`, `assistant/AssistantTools.kt`.
+
+### Verificación
+- `./gradlew :app:compileDebugKotlin` compila sin errores.
+- Sin pruebas automatizadas todavía (`AssistantTools`/`KitchenTimer` seguían anotados como
+  "lógica pura, fácil de cubrir con JUnit" desde el README original — sigue pendiente).
+
+### Nota metodológica
+El skill de code review interpreta un "path" como diff contra `HEAD~1`, no como auditoría del
+archivo completo en su estado actual — para que cubra código que no cambió en el último commit
+hay que pasarle explícitamente un rango (`<commit-base>..HEAD -- <paths>`). Vale la pena
+recordarlo la próxima vez que se pida un review de "todo el código".
+
+---
+
 ## 2026-09-27 — Code review del módulo BLE: 4 bugs corregidos
 
 Code review (nivel high) sobre `hardware/` y el manifest agregados en la sesión anterior.

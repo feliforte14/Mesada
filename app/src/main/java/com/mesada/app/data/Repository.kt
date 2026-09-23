@@ -73,6 +73,7 @@ class MesadaRepository(private val dao: MesadaDao) {
     /** Quita el último registro de esa comida cuyo nombre contenga [query]. Devuelve el nombre quitado. */
     suspend fun removeByName(meal: Meal, query: String): String? {
         val q = query.trim().lowercase()
+        if (q.isBlank()) return null
         val match = dao.entriesOnce(today()).filter { it.meal == meal.key }
             .lastOrNull { it.displayName.lowercase().contains(q) || it.foodId == q } ?: return null
         dao.delete(match.id)

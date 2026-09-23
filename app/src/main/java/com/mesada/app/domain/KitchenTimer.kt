@@ -58,8 +58,11 @@ class KitchenTimer(private val scope: CoroutineScope) {
     private fun alarm() = runCatching {
         val tone = ToneGenerator(AudioManager.STREAM_ALARM, 90)
         scope.launch {
-            repeat(3) { tone.startTone(ToneGenerator.TONE_PROP_BEEP2, 400); delay(700) }
-            tone.release()
+            try {
+                repeat(3) { tone.startTone(ToneGenerator.TONE_PROP_BEEP2, 400); delay(700) }
+            } finally {
+                tone.release()
+            }
         }
     }
 }
