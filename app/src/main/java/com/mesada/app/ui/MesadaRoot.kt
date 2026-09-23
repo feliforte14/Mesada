@@ -2,6 +2,7 @@ package com.mesada.app.ui
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -84,6 +85,9 @@ private fun MesadaMain(vm: MesadaViewModel) {
     val day by vm.day.collectAsStateWithLifecycle()
     val timer by vm.timer.state.collectAsStateWithLifecycle()
     val ui by vm.assistant.collectAsStateWithLifecycle()
+    val scaleEnabled by vm.scaleEnabled.collectAsStateWithLifecycle()
+    val scaleConnection by vm.scaleConnection.collectAsStateWithLifecycle()
+    val scaleGrams by vm.scaleGrams.collectAsStateWithLifecycle()
     var screen by rememberSaveable { mutableStateOf(Screen.TODAY) }
 
     val context = LocalContext.current
@@ -94,6 +98,24 @@ private fun MesadaMain(vm: MesadaViewModel) {
         vm.openAssistant()
         val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         if (granted || ui.mode != VoiceMode.IDLE) vm.onMicTapped() else micPermission.launch(Manifest.permission.RECORD_AUDIO)
+    }
+
+    val blePermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+    } else {
+        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+    val scalePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+        if (results.values.all { it }) vm.setScaleEnabled(true)
+    }
+    val onScaleToggle = { enabled: Boolean ->
+        if (!enabled) {
+            vm.setScaleEnabled(false)
+        } else if (blePermissions.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }) {
+            vm.setScaleEnabled(true)
+        } else {
+            scalePermission.launch(blePermissions)
+        }
     }
 
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).windowInsetsPadding(WindowInsets.safeDrawing)) {
@@ -137,6 +159,8 @@ private fun MesadaMain(vm: MesadaViewModel) {
                         onTimerPreset = { vm.timer.set(it) }, onTimerToggle = vm.timer::toggle,
                         onTimerReset = vm.timer::reset, onAddIdea = vm::addIdea, onGoal = vm::changeGoal,
                         onEditProfile = vm::editProfile,
+                        scaleEnabled = scaleEnabled, scaleConnection = scaleConnection, scaleGrams = scaleGrams,
+                        onScaleToggle = onScaleToggle,
                     )
                 }
             }

@@ -5,6 +5,110 @@ avanza. Formato: una entrada por sesión de trabajo, ordenadas de más reciente 
 
 ---
 
+## 2026-09-26 — Módulo de hardware opcional (balanza Bluetooth) en la app
+
+### Requerimiento
+- **RF-05**: la app tiene que poder usarse íntegramente sin comprar ni conectar ningún
+  hardware (registro manual, catálogo, onboarding/objetivos, temporizador, sugerencias,
+  asistente de voz con gramos estimados) **o** con la balanza Bluetooth conectada, a
+  elección del usuario — no como dos builds separados, sino como un toggle en la misma app.
+
+### Decisión técnica y por qué
+| Decisión | Alternativa descartada | Motivo |
+|---|---|---|
+| Interfaz `ScaleSource` (`hardware/ScaleSource.kt`) con un solo estado `DISABLED` explícito, en vez de nullable `ScaleSource?` en el contenedor de dependencias | `AppContainer.scaleSource: ScaleSource?` | Con `DISABLED` como estado de la propia interfaz, la UI (`KitchenScreen`) siempre tiene algo que observar y mostrar, sin `if (scaleSource != null)` repartido por la UI. |
+| `BleScaleSource.start()` chequea `HardwareSettings.scaleEnabled` **antes** de tocar cualquier API de `BluetoothManager`/`BluetoothAdapter` | Siempre escanear y depender de que la UI no llame a `start()` si está apagado | Refuerza la garantía en el propio módulo de hardware, no solo en quien lo llama — si en el futuro se agrega otro caller, no puede accidentalmente activar Bluetooth con el toggle apagado. |
+| Toggle persistido en `SharedPreferences` (`HardwareSettings`) en vez de `DataStore` | `androidx.datastore` | No había ninguna dependencia de DataStore en el proyecto todavía; para un solo booleano, `SharedPreferences` alcanza sin sumar una librería nueva. |
+| Permisos BLE (`BLUETOOTH_SCAN`/`BLUETOOTH_CONNECT`/`ACCESS_FINE_LOCATION`) declarados en el manifest pero pedidos en runtime recién cuando el usuario prende el switch | Pedirlos todos al abrir la app | Coherente con RF-05: si el usuario nunca activa la balanza, la app no debe ni pedir permisos de Bluetooth. |
+| Todas las excepciones de BLE (`SecurityException` por permiso revocado a mitad de conexión, adapter apagado, etc.) atrapadas dentro de `BleScaleSource` y traducidas a `ScaleConnectionState.DISCONNECTED` | Dejar que floten y decidir en el ViewModel/UI | El estado de conexión ya es observable por Flow; no tiene sentido que un error de hardware opcional tire la UI abajo — se degrada a "no conectado" y el resto de la app sigue andando. |
+
+### Archivos tocados
+- `hardware/ScaleSource.kt` (nuevo) — interfaz + `ScaleConnectionState` (`DISABLED/DISCONNECTED/CONNECTING/CONNECTED`).
+- `hardware/BleScaleSource.kt` (nuevo) — cliente BLE real: escanea por nombre `"Mesada-Balanza"`,
+  se conecta al servicio/característica con los mismos UUIDs que `firmware/03_lectura_ble.ino`,
+  suscribe a notify y parsea los gramos recibidos como texto.
+- `data/HardwareSettings.kt` (nuevo) — toggle persistido (`SharedPreferences`).
+- `MesadaApp.kt` — `AppContainer` arma `hardwareSettings` + `scaleSource` (siempre un `BleScaleSource`,
+  pero inerte si el toggle está apagado).
+- `MesadaViewModel.kt` — expone `scaleEnabled/scaleConnection/scaleGrams` y `setScaleEnabled()`;
+  arranca el `ScaleSource` en `init` si ya estaba activado, lo detiene en `onCleared`.
+- `ui/screens/KitchenScreen.kt` — panel nuevo "Balanza Bluetooth" con switch y estado en texto.
+- `ui/MesadaRoot.kt` — pide los permisos BLE correctos según versión de Android (`BLUETOOTH_SCAN`/
+  `BLUETOOTH_CONNECT` en API 31+, `ACCESS_FINE_LOCATION` antes) solo al activar el switch.
+- `AndroidManifest.xml` — permisos BLE + `<uses-feature android:required="false">` (no bloquea
+  instalar en dispositivos sin BLE).
+
+### Verificación
+- `./gradlew :app:compileDebugKotlin` compila sin errores con los cambios.
+- **No probado en dispositivo/emulador** ni con hardware real conectado — sigue pendiente lo mismo
+  que ya estaba anotado en sesiones previas.
+
+### Pendiente / próximos pasos anotados
+- El panel de Cocina solo muestra el peso medido como información (`"X g en la bandeja"`); todavía
+  no está conectado al flujo de registrar comida — ni `AddScreen` ni `agregar_alimento` del asistente
+  usan `scaleGrams` para reemplazar la estimación por voz. Es el paso obvio que sigue.
+- `BleScaleSource` asume que el dispositivo BLE ya está emparejado/en rango y con el nombre exacto
+  `"Mesada-Balanza"` (fijado en el firmware) — no se probó el escaneo real, solo revisado por lectura.
+- Sin manejo de reconexión automática si la balanza se apaga y se prende de nuevo a mitad de sesión
+  más allá de lo que ya hace `onConnectionStateChange` (vuelve a `DISCONNECTED`, no reintenta el scan solo).
+
+---
+
+## 2026-09-25 — Diseño del producto físico (tablet + balanza) y firmware inicial
+
+Sesión sin cambios en la app Android. Foco en el hardware: se subió el proyecto a
+GitHub (`github.com/feliforte14/Mesada`, repo previamente vacío, primer commit con
+los 36 archivos existentes) y se avanzó el diseño del producto físico que hasta ahora
+solo estaba anotado como pendiente en el README ("Balanza Bluetooth (BLE)").
+
+### Decisiones de diseño físico y por qué
+| Decisión | Alternativa descartada | Motivo |
+|---|---|---|
+| Balanza y mástil de la tablet como estructuras **mecánicamente separadas**, aunque compartan gabinete | Un solo cuerpo moldeado/soldado entre bandeja y mástil | Las celdas de carga son sensibles a microvibración: si el mástil transmite su peso o el toque en pantalla a la misma plancha que sostiene la celda, la lectura de peso se ensucia con cada interacción táctil. |
+| Mástil **desmontable** (plug + socket con gasket de goma/silicona amortiguante) | Mástil fijo atornillado al gabinete | Permite lavar la bandeja de pesado por separado (uso en cocina = contacto con comida) sin desarmar toda la unidad; el gasket evita que "desmontable" reintroduzca acople rígido de vibración. |
+| Boceto conceptual generado con Gemini (imagen, no CAD) para validar la idea antes de modelar | Pasar directo a CAD/3D | Más rápido para iterar sobre la disposición general (bandeja + mástil + socket) antes de comprometerse a medidas reales. |
+
+### Prototipo de hardware — alcance definido
+Lista de compras y plan de armado para un primer prototipo **funcional, no estético**
+(sin gabinete desmontable todavía — eso queda para una iteración mecánica posterior,
+una vez validada la lectura de peso):
+- ESP32 DevKit, celda de carga de barra 5kg, módulo HX711, protoboard, jumpers.
+- Bandeja provisoria (tabla de cortar / MDF / acrílico), sin gabinete definitivo.
+- Secuencia de armado: (1) validar el ESP32 solo con Blink, (2) cablear HX711↔celda
+  según el rotulado del módulo comprado (varía por fabricante, no hay un pinout
+  universal), (3) cablear HX711↔ESP32, (4) calibrar con peso conocido, (5) recién
+  después agregar BLE — separado a propósito para no mezclar problemas de sensor
+  con problemas de conectividad al debuggear.
+
+### Firmware inicial (nuevo, `firmware/`)
+Carpeta nueva en la raíz del repo, fuera del proyecto Gradle (no es código Android,
+es firmware Arduino/ESP32 independiente):
+- `firmware/README.md` — pinout HX711↔ESP32, librerías requeridas (`HX711` de Bogdan
+  Necula, core de placas ESP32), orden de uso de los tres sketches.
+- `firmware/01_calibracion/` — sketch interactivo por Serial para tarar y encontrar
+  el `calibration_factor` de la celda de carga específica que se compre (`+`/`-`
+  ajustan en vivo, `t` tara). Este factor **no es portable entre celdas individuales**,
+  hay que recalibrar por cada unidad física.
+- `firmware/02_lectura_serial/` — lectura estable de gramos por Serial (promedio de
+  10 muestras, umbral de ruido cerca de cero), usando el factor ya calibrado.
+- `firmware/03_lectura_ble/` — mismo sensado, transmitido por BLE (servicio GATT con
+  característica notify). UUIDs de servicio/característica son **provisorios**,
+  quedan pendientes de coordinar con el cliente BLE del lado Android.
+
+### Pendiente / próximos pasos anotados
+- Implementar el cliente BLE en Kotlin (decidir dónde vive en la arquitectura —
+  candidato: paquete nuevo `hardware/` junto a `assistant/` y `voice/`).
+- Fijar UUIDs de servicio/característica BLE definitivos en ambos lados (firmware y app).
+- `calibration_factor` de arranque en los sketches (-7050) es un valor típico de
+  referencia para celdas de 5kg, no calibrado — se ajusta recién con la celda real
+  en mano, siguiendo `01_calibracion`.
+- Iteración mecánica del gabinete desmontable (grosor real del conector/espiga,
+  el boceto de Gemini lo mostró demasiado fino tipo plug USB-C para soportar el peso
+  del mástil + tablet) — queda para después de validar el sensado.
+- Diseño físico no llegó a CAD ni a medidas reales todavía, solo boceto conceptual.
+
+---
+
 ## 2026-09-24 — Onboarding de objetivos + revisión de robustez + catálogo
 
 ### Requerimientos funcionales agregados

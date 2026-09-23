@@ -19,6 +19,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -31,6 +32,7 @@ import com.mesada.app.data.DayState
 import com.mesada.app.domain.MealIdea
 import com.mesada.app.domain.MealIdeas
 import com.mesada.app.domain.TimerState
+import com.mesada.app.hardware.ScaleConnectionState
 import com.mesada.app.ui.Panel
 import com.mesada.app.ui.RoundButton
 import com.mesada.app.ui.ScreenHeader
@@ -47,6 +49,10 @@ fun KitchenScreen(
     onAddIdea: (MealIdea) -> Unit,
     onGoal: (GoalField, Int) -> Unit,
     onEditProfile: () -> Unit,
+    scaleEnabled: Boolean,
+    scaleConnection: ScaleConnectionState,
+    scaleGrams: Double?,
+    onScaleToggle: (Boolean) -> Unit,
 ) {
     val remK = day.remainingKcal
     val remP = day.remainingProtein
@@ -132,6 +138,25 @@ fun KitchenScreen(
                                 modifier = Modifier.width(100.dp))
                             RoundButton("+", "Subir ${goal.second}", { onGoal(goal.first, step) })
                         }
+                    }
+                }
+                Spacer(Modifier.height(24.dp))
+                Panel(Modifier.fillMaxWidth()) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Balanza Bluetooth", style = MaterialTheme.typography.headlineSmall)
+                            Text(
+                                when {
+                                    !scaleEnabled -> "Desactivada — los gramos se estiman por voz o se cargan a mano."
+                                    scaleConnection == ScaleConnectionState.CONNECTED && scaleGrams != null ->
+                                        "Conectada · ${scaleGrams.roundToInt()} g en la bandeja"
+                                    scaleConnection == ScaleConnectionState.CONNECTING -> "Buscando la balanza…"
+                                    else -> "Activada, pero no conectada todavía."
+                                },
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(checked = scaleEnabled, onCheckedChange = onScaleToggle)
                     }
                 }
             }
