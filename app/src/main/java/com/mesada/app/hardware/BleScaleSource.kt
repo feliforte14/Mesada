@@ -4,6 +4,7 @@ import android.Manifest
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.le.ScanCallback
@@ -93,6 +94,8 @@ class BleScaleSource(
                     try { g.discoverServices() } catch (e: SecurityException) { }
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
+                    try { g.close() } catch (e: SecurityException) { }
+                    gatt = null
                     _connectionState.value = if (settings.scaleEnabled.value) ScaleConnectionState.DISCONNECTED else ScaleConnectionState.DISABLED
                 }
             }
@@ -102,13 +105,31 @@ class BleScaleSource(
             val characteristic = g.getService(SERVICE_UUID)?.getCharacteristic(WEIGHT_CHAR_UUID) ?: return
             try {
                 g.setCharacteristicNotification(characteristic, true)
+                val descriptor = characteristic.getDescriptor(CCCD_UUID) ?: return
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    g.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+                } else {
+                    @Suppress("DEPRECATION")
+                    descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                    @Suppress("DEPRECATION")
+                    g.writeDescriptor(descriptor)
+                }
             } catch (e: SecurityException) { }
         }
 
-        override fun onCharacteristicChanged(g: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
-            val text = characteristic.value?.toString(Charsets.UTF_8) ?: return
-            text.trim().toDoubleOrNull()?.let { _grams.value = it }
+        override fun onCharacteristicChanged(g: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray) {
+            onWeightPayload(value)
         }
+
+        @Suppress("DEPRECATION")
+        override fun onCharacteristicChanged(g: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) return // el overload de 3 args ya lo maneja
+            onWeightPayload(characteristic.value ?: return)
+        }
+    }
+
+    private fun onWeightPayload(value: ByteArray) {
+        value.toString(Charsets.UTF_8).trim().toDoubleOrNull()?.let { _grams.value = it }
     }
 
     private fun hasBlePermissions(): Boolean {
@@ -125,5 +146,7 @@ class BleScaleSource(
         // Coordinados con firmware/03_lectura_ble/03_lectura_ble.ino — cambiar en ambos lados a la vez.
         private val SERVICE_UUID: UUID = UUID.fromString("5b1e0001-1a2b-4c3d-9e8f-abc123456789")
         private val WEIGHT_CHAR_UUID: UUID = UUID.fromString("5b1e0002-1a2b-4c3d-9e8f-abc123456789")
+        // Client Characteristic Configuration Descriptor — estándar BLE, no propio de Mesada.
+        private val CCCD_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
     }
 }

@@ -5,6 +5,31 @@ avanza. Formato: una entrada por sesión de trabajo, ordenadas de más reciente 
 
 ---
 
+## 2026-09-27 — Code review del módulo BLE: 4 bugs corregidos
+
+Code review (nivel high) sobre `hardware/` y el manifest agregados en la sesión anterior.
+Encontró que `BleScaleSource` compilaba pero **no funcionaba de verdad**: se conectaba a la
+balanza pero nunca recibía datos de peso.
+
+### Bugs corregidos
+| Bug | Causa | Fix |
+|---|---|---|
+| `scaleGrams` nunca se actualizaba aunque la balanza estuviera conectada | Solo se sobrescribía `onCharacteristicChanged(gatt, characteristic)` (2 args, deprecado); con `targetSdk = 35` (≥ API 33) el framework **nunca** llama a ese overload — pasa a llamar al de 3 args con el payload aparte. | Se agregó el overload de 3 args (`onCharacteristicChanged(gatt, characteristic, value)`) como camino principal; el de 2 args queda de fallback real solo para API < 33 (`Build.VERSION.SDK_INT >= TIRAMISU` corta ahí). |
+| El ESP32 nunca mandaba notificaciones aunque `setCharacteristicNotification(true)` se llamara | Ese método solo habilita el ruteo **del lado Android**; el spec BLE exige además escribir el descriptor CCCD (`00002902-...`) para que el periférico empiece a emitir `notify()` — el firmware (`BLE2902` en el `.ino`) espera exactamente eso. | Se agregó la escritura del descriptor CCCD con `ENABLE_NOTIFICATION_VALUE` (API nueva `writeDescriptor(descriptor, value)` en API 33+, la deprecada `descriptor.value =` + `writeDescriptor(descriptor)` antes). |
+| El toggle de balanza quedaría roto en cualquier tablet con Android 8-11 (API 26-30, dentro del rango de `minSdk = 26`) | Faltaban los permisos legacy `BLUETOOTH`/`BLUETOOTH_ADMIN` en el manifest — sin ellos, `startScan`/`connectGatt` tiran `SecurityException`, que el código atrapa en silencio y deja todo en `DISCONNECTED` para siempre. | Agregados ambos permisos con `android:maxSdkVersion="30"` (en API 31+ ya no existen/no hacen falta). |
+| Fuga de `BluetoothGattClient` si la balanza sale de rango con la función prendida | `onConnectionStateChange` en `STATE_DISCONNECTED` actualizaba el estado pero nunca llamaba a `gatt.close()`; si la balanza reconectaba, la referencia vieja se pisaba sin cerrar — Android limita a ~4-7 clientes GATT concurrentes por proceso, así que ciclos repetidos de entrar/salir de rango terminan rompiendo *cualquier* conexión BLE de la app hasta reiniciar el proceso. | `g.close()` + `gatt = null` en el propio callback de desconexión. |
+
+### Archivos tocados
+- `hardware/BleScaleSource.kt` — los cuatro fixes de arriba.
+- `AndroidManifest.xml` — permisos `BLUETOOTH`/`BLUETOOTH_ADMIN` (`maxSdkVersion="30"`).
+
+### Verificación
+- `./gradlew :app:compileDebugKotlin` compila sin errores.
+- Sigue sin probarse contra hardware real (no hay balanza física todavía) — la corrección es por
+  lectura de la API de Android/BLE spec, no validada end-to-end.
+
+---
+
 ## 2026-09-26 — Módulo de hardware opcional (balanza Bluetooth) en la app
 
 ### Requerimiento
