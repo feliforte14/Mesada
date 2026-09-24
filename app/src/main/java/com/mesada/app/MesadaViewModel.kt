@@ -9,13 +9,20 @@ import androidx.lifecycle.viewModelScope
 import com.mesada.app.assistant.Assistant
 import com.mesada.app.assistant.AssistantTools
 import com.mesada.app.assistant.ClaudeException
+import com.mesada.app.data.Category
 import com.mesada.app.data.DayState
+import com.mesada.app.data.DaySummary
 import com.mesada.app.data.Food
 import com.mesada.app.data.FoodCatalog
+import com.mesada.app.data.Macros
 import com.mesada.app.data.Meal
+import com.mesada.app.data.Measure
 import com.mesada.app.data.db.ProfileEntity
 import com.mesada.app.domain.KitchenTimer
-import com.mesada.app.domain.MealIdea
+import com.mesada.app.domain.MealIdeas
+import com.mesada.app.domain.RecipeUi
+import com.mesada.app.domain.macrosOf
+import com.mesada.app.domain.parseRecipeItems
 import com.mesada.app.hardware.ScaleConnectionState
 import com.mesada.app.voice.SpeechEvent
 import com.mesada.app.voice.SpeechInput
@@ -26,6 +33,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -56,6 +64,25 @@ class MesadaViewModel(app: Application) : AndroidViewModel(app) {
 
     val day: StateFlow<DayState> = repo.observeDay()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DayState.empty())
+
+    val foods: StateFlow<List<Food>> = repo.observeFoods()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FoodCatalog.all)
+
+    val recipes: StateFlow<List<RecipeUi>> =
+        combine(repo.observeCustomRecipes(), repo.observeFoods()) { customs, foods ->
+            val map = foods.associateBy { it.id }
+            val builtin = MealIdeas.all.map {
+                RecipeUi("builtin_${it.name}", it.name, it.items, macrosOf(it.items, map), custom = false)
+            }
+            val custom = customs.map {
+                val items = parseRecipeItems(it.items)
+                RecipeUi(it.id, it.name, items, macrosOf(items, map), custom = true)
+            }
+            builtin + custom
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val history: StateFlow<List<DaySummary>> = repo.observeHistory()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     // Loading al principio (todavía no sabemos si hay perfil guardado); Loaded(null) =
     // sí se consultó la base y no hay perfil, ahí corresponde mostrar el onboarding.
@@ -103,9 +130,23 @@ class MesadaViewModel(app: Application) : AndroidViewModel(app) {
     fun remove(id: Long) = viewModelScope.launch { repo.remove(id) }
     fun changeSteps(delta: Int) = viewModelScope.launch { repo.changeSteps(delta = delta) }
     fun clearDay() = viewModelScope.launch { repo.clearToday(); brain.reset() }
-    fun addIdea(idea: MealIdea) = viewModelScope.launch {
-        idea.items.forEach { (id, q) -> repo.addFood(Meal.DINNER, FoodCatalog.byId.getValue(id), q) }
+    fun addRecipe(recipe: RecipeUi) = viewModelScope.launch { repo.addRecipeItems(recipe.items) }
+
+    fun createFood(
+        name: String, category: Category, measure: Measure, per100: Macros,
+        gramsPerPiece: Double, unitSingular: String, unitPlural: String,
+    ) = viewModelScope.launch {
+        repo.saveFood(null, name, category, measure, per100, gramsPerPiece, unitSingular, unitPlural)
     }
+    fun updateFood(
+        id: String, name: String, category: Category, measure: Measure, per100: Macros,
+        gramsPerPiece: Double, unitSingular: String, unitPlural: String,
+    ) = viewModelScope.launch {
+        repo.saveFood(id, name, category, measure, per100, gramsPerPiece, unitSingular, unitPlural)
+    }
+    fun deleteFood(food: Food) = viewModelScope.launch { repo.deleteFood(food) }
+    fun createRecipe(name: String, items: List<Pair<String, Double>>) = viewModelScope.launch { repo.createRecipe(name, items) }
+    fun deleteRecipe(id: String) = viewModelScope.launch { repo.deleteRecipe(id) }
     fun changeGoal(field: GoalField, delta: Int) = viewModelScope.launch {
         repo.updateGoals { g ->
             when (field) {

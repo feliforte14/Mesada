@@ -19,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,22 +34,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.mesada.app.data.DayState
 import com.mesada.app.data.Meal
 import com.mesada.app.data.displayName
-import com.mesada.app.data.emoji
 import com.mesada.app.data.macros
 import com.mesada.app.data.qtyLabel
 import com.mesada.app.data.db.EntryEntity
 import com.mesada.app.ui.CalorieRing
 import com.mesada.app.ui.MacroBar
 import com.mesada.app.ui.Panel
-import com.mesada.app.ui.RoundButton
 import com.mesada.app.ui.ScreenHeader
 import com.mesada.app.ui.kcal
 import com.mesada.app.ui.theme.Palette
-import com.mesada.app.ui.thousands
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -61,7 +56,6 @@ fun TodayScreen(
     day: DayState,
     onRemove: (Long) -> Unit,
     onAddTo: (Meal) -> Unit,
-    onSteps: (Int) -> Unit,
     onReset: () -> Unit,
 ) {
     var confirmReset by remember { mutableStateOf(false) }
@@ -82,17 +76,6 @@ fun TodayScreen(
                 MacroBar("Proteína", t.protein, day.goals.protein, MaterialTheme.colorScheme.primary)
                 MacroBar("Hidratos", t.carbs, day.goals.carbs, Palette.Saffron)
                 MacroBar("Grasas", t.fat, day.goals.fat, MaterialTheme.colorScheme.tertiary)
-                HorizontalDivider(Modifier.padding(vertical = 18.dp), color = MaterialTheme.colorScheme.outline)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(day.steps.thousands(), style = MaterialTheme.typography.headlineMedium)
-                        Text("pasos · ≈${(day.steps * 0.04).roundToInt()} kcal",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    RoundButton("−", "Restar 1000 pasos", { onSteps(-1000) })
-                    Spacer(Modifier.width(8.dp))
-                    RoundButton("+", "Sumar 1000 pasos", { onSteps(1000) })
-                }
             }
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(320.dp),
@@ -129,7 +112,6 @@ private fun MealCard(meal: Meal, entries: List<EntryEntity>, onRemove: (Long) ->
         }
         entries.forEach { e ->
             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(e.emoji, fontSize = 26.sp, modifier = Modifier.width(40.dp))
                 Column(Modifier.weight(1f)) {
                     Text(e.displayName, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text("${e.qtyLabel} · ${e.macros.protein.roundToInt()} g prot",

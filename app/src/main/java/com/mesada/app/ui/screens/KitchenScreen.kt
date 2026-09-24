@@ -13,15 +13,23 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -29,9 +37,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mesada.app.GoalField
 import com.mesada.app.data.DayState
-import com.mesada.app.domain.MealIdea
-import com.mesada.app.domain.MealIdeas
+import com.mesada.app.data.Food
+import com.mesada.app.domain.RecipeUi
 import com.mesada.app.domain.TimerState
+import com.mesada.app.domain.macrosOf
+import com.mesada.app.domain.suggestRecipes
 import com.mesada.app.hardware.ScaleConnectionState
 import com.mesada.app.ui.Panel
 import com.mesada.app.ui.RoundButton
@@ -45,10 +55,14 @@ private data class GoalRow(val field: GoalField, val label: String, val value: S
 fun KitchenScreen(
     day: DayState,
     timer: TimerState,
+    recipes: List<RecipeUi>,
+    foods: List<Food>,
     onTimerPreset: (Double) -> Unit,
     onTimerToggle: () -> Unit,
     onTimerReset: () -> Unit,
-    onAddIdea: (MealIdea) -> Unit,
+    onAddRecipe: (RecipeUi) -> Unit,
+    onCreateRecipe: (String, List<Pair<String, Double>>) -> Unit,
+    onDeleteRecipe: (String) -> Unit,
     onGoal: (GoalField, Int) -> Unit,
     onEditProfile: () -> Unit,
     scaleEnabled: Boolean,
@@ -58,6 +72,7 @@ fun KitchenScreen(
 ) {
     val remK = day.remainingKcal
     val remP = day.remainingProtein
+    var showNewRecipe by remember { mutableStateOf(false) }
     val message = if (remK < 150) {
         "Ya estás cerca de tu objetivo: llevás ${day.totals.kcal.kcal()} kcal. Si tenés hambre, elegí algo liviano con verduras."
     } else buildString {
@@ -71,20 +86,25 @@ fun KitchenScreen(
         ScreenHeader("Según lo que llevás comido hoy", "Cocina")
         Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             Column(Modifier.weight(1.4f).verticalScroll(rememberScrollState())) {
-                Text(message, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(bottom = 22.dp))
-                MealIdeas.suggest(remK, remP).forEach { idea ->
-                    val m = idea.macros
+                Text(message, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(bottom = 18.dp))
+                Row(Modifier.fillMaxWidth().padding(bottom = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Ideas para completar el día", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                    OutlinedButton(onClick = { showNewRecipe = true }, modifier = Modifier.heightIn(min = 52.dp)) {
+                        Text("+ Nueva receta")
+                    }
+                }
+                suggestRecipes(recipes, remK, remP).forEach { recipe ->
+                    val m = recipe.macros
                     Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface,
                         modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp)) {
                         Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(idea.emoji, fontSize = 40.sp)
-                            Spacer(Modifier.width(16.dp))
                             Column(Modifier.weight(1f)) {
-                                Text(idea.name, style = MaterialTheme.typography.titleLarge)
+                                Text(recipe.name, style = MaterialTheme.typography.titleLarge)
                                 Text("${m.kcal.kcal()} kcal · ${m.protein.roundToInt()} g de proteína",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            FilledTonalButton(onClick = { onAddIdea(idea) }, modifier = Modifier.heightIn(min = 60.dp),
+                            if (recipe.custom) TextButton(onClick = { onDeleteRecipe(recipe.id) }) { Text("Eliminar") }
+                            FilledTonalButton(onClick = { onAddRecipe(recipe) }, modifier = Modifier.heightIn(min = 60.dp),
                                 shape = RoundedCornerShape(18.dp)) { Text("Agregar a cena") }
                         }
                     }
@@ -163,5 +183,68 @@ fun KitchenScreen(
                 }
             }
         }
+    }
+
+    if (showNewRecipe) NewRecipeDialog(
+        foods = foods,
+        onDismiss = { showNewRecipe = false },
+        onCreate = { name, items -> onCreateRecipe(name, items); showNewRecipe = false },
+    )
+}
+
+@Composable
+private fun NewRecipeDialog(
+    foods: List<Food>,
+    onDismiss: () -> Unit,
+    onCreate: (String, List<Pair<String, Double>>) -> Unit,
+) {
+    var name by remember { mutableStateOf("") }
+    val selected = remember { mutableStateMapOf<String, Double>() }
+    val foodMap = remember(foods) { foods.associateBy { it.id } }
+    val items = selected.map { it.key to it.value }
+    val macros = macrosOf(items, foodMap)
+    val valid = name.isNotBlank() && items.isNotEmpty()
+
+    Column {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            confirmButton = {
+                TextButton(enabled = valid, onClick = { onCreate(name.trim(), items) }) { Text("Guardar") }
+            },
+            dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
+            title = { Text("Nueva receta") },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true,
+                        label = { Text("Nombre de la receta") }, modifier = Modifier.fillMaxWidth())
+                    Spacer(Modifier.height(8.dp))
+                    Text("${macros.kcal.kcal()} kcal · ${macros.protein.roundToInt()} g proteína",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+                    Text("Ingredientes", style = MaterialTheme.typography.labelLarge)
+                    foods.forEach { food ->
+                        val qty = selected[food.id]
+                        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(food.name, style = MaterialTheme.typography.titleSmall)
+                                if (qty != null) Text(food.formatQty(qty), style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            if (qty == null) {
+                                OutlinedButton(onClick = { selected[food.id] = food.defaultQty }) { Text("Agregar") }
+                            } else {
+                                RoundButton("−", "Menos ${food.name}", {
+                                    val next = qty - food.step
+                                    if (next < food.step) selected.remove(food.id) else selected[food.id] = next
+                                }, 44.dp)
+                                Spacer(Modifier.width(6.dp))
+                                RoundButton("+", "Más ${food.name}", { selected[food.id] = qty + food.step }, 44.dp)
+                            }
+                        }
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    }
+                }
+            },
+        )
     }
 }

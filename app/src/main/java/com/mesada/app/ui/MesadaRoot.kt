@@ -10,6 +10,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -23,8 +24,11 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DirectionsRun
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -32,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationRailItemDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,14 +55,20 @@ import com.mesada.app.MesadaViewModel
 import com.mesada.app.ProfileLoadState
 import com.mesada.app.VoiceMode
 import com.mesada.app.ui.screens.AddScreen
+import com.mesada.app.ui.screens.ExerciseScreen
+import com.mesada.app.ui.screens.HistoryScreen
 import com.mesada.app.ui.screens.KitchenScreen
 import com.mesada.app.ui.screens.OnboardingScreen
+import com.mesada.app.ui.screens.RewardsScreen
 import com.mesada.app.ui.screens.TodayScreen
 
 private enum class Screen(val label: String, val icon: ImageVector) {
     TODAY("Hoy", Icons.Filled.Today),
     ADD("Agregar", Icons.Filled.Add),
     KITCHEN("Cocina", Icons.Filled.Restaurant),
+    EXERCISE("Ejercicio", Icons.Filled.DirectionsRun),
+    HISTORY("Evolución", Icons.Filled.ShowChart),
+    REWARDS("Logros", Icons.Filled.EmojiEvents),
 }
 
 @Composable
@@ -83,6 +94,9 @@ fun MesadaRoot(vm: MesadaViewModel) {
 @Composable
 private fun MesadaMain(vm: MesadaViewModel) {
     val day by vm.day.collectAsStateWithLifecycle()
+    val foods by vm.foods.collectAsStateWithLifecycle()
+    val recipes by vm.recipes.collectAsStateWithLifecycle()
+    val history by vm.history.collectAsStateWithLifecycle()
     val timer by vm.timer.state.collectAsStateWithLifecycle()
     val ui by vm.assistant.collectAsStateWithLifecycle()
     val scaleEnabled by vm.scaleEnabled.collectAsStateWithLifecycle()
@@ -125,52 +139,70 @@ private fun MesadaMain(vm: MesadaViewModel) {
                 contentColor = MaterialTheme.colorScheme.inverseOnSurface,
                 modifier = Modifier.fillMaxHeight(),
                 header = {
-                    Text("Mesada", color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(vertical = 20.dp))
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 24.dp)) {
+                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(54.dp)) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("N", color = MaterialTheme.colorScheme.onPrimary,
+                                    style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        Text("Nomi", color = MaterialTheme.colorScheme.inverseOnSurface,
+                            fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    }
                 },
             ) {
+                Spacer(Modifier.height(8.dp))
                 Screen.entries.forEach { s ->
                     NavigationRailItem(
                         selected = screen == s, onClick = { screen = s },
-                        icon = { Icon(s.icon, contentDescription = null, modifier = Modifier.size(30.dp)) },
-                        label = { Text(s.label) },
+                        icon = { Icon(s.icon, contentDescription = null, modifier = Modifier.size(28.dp)) },
+                        label = { Text(s.label, fontWeight = if (screen == s) FontWeight.SemiBold else FontWeight.Normal) },
                         colors = NavigationRailItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.onSecondary,
-                            indicatorColor = MaterialTheme.colorScheme.secondary,
+                            selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                            indicatorColor = MaterialTheme.colorScheme.primary,
                             unselectedIconColor = MaterialTheme.colorScheme.inverseOnSurface,
                             unselectedTextColor = MaterialTheme.colorScheme.inverseOnSurface,
-                            selectedTextColor = MaterialTheme.colorScheme.secondary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
                         ),
-                        modifier = Modifier.padding(vertical = 6.dp),
+                        modifier = Modifier.padding(vertical = 8.dp),
                     )
                 }
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.weight(1f))
+                FloatingActionButton(
+                    onClick = onMic, shape = CircleShape,
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
+                    modifier = Modifier.padding(vertical = 20.dp).size(64.dp),
+                ) { Icon(Icons.Filled.Mic, contentDescription = "Hablar con el asistente", modifier = Modifier.size(32.dp)) }
             }
             Box(Modifier.weight(1f).fillMaxHeight()) {
                 when (screen) {
                     Screen.TODAY -> TodayScreen(
                         day = day, onRemove = vm::remove,
                         onAddTo = { vm.selectedMeal = it; screen = Screen.ADD },
-                        onSteps = vm::changeSteps, onReset = vm::clearDay,
+                        onReset = vm::clearDay,
                     )
-                    Screen.ADD -> AddScreen(vm.selectedMeal, { vm.selectedMeal = it }) { food, qty -> vm.addFood(food, qty) }
+                    Screen.ADD -> AddScreen(
+                        foods = foods, selectedMeal = vm.selectedMeal, onSelectMeal = { vm.selectedMeal = it },
+                        onAdd = { food, qty -> vm.addFood(food, qty) },
+                        onCreateFood = vm::createFood, onUpdateFood = vm::updateFood, onDeleteFood = vm::deleteFood,
+                    )
                     Screen.KITCHEN -> KitchenScreen(
-                        day = day, timer = timer,
+                        day = day, timer = timer, recipes = recipes, foods = foods,
                         onTimerPreset = { vm.timer.set(it) }, onTimerToggle = vm.timer::toggle,
-                        onTimerReset = vm.timer::reset, onAddIdea = vm::addIdea, onGoal = vm::changeGoal,
-                        onEditProfile = vm::editProfile,
+                        onTimerReset = vm.timer::reset,
+                        onAddRecipe = vm::addRecipe, onCreateRecipe = vm::createRecipe, onDeleteRecipe = vm::deleteRecipe,
+                        onGoal = vm::changeGoal, onEditProfile = vm::editProfile,
                         scaleEnabled = scaleEnabled, scaleConnection = scaleConnection, scaleGrams = scaleGrams,
                         onScaleToggle = onScaleToggle,
                     )
+                    Screen.EXERCISE -> ExerciseScreen(day = day, onSteps = vm::changeSteps)
+                    Screen.HISTORY -> HistoryScreen(history)
+                    Screen.REWARDS -> RewardsScreen(day = day, history = history)
                 }
             }
         }
-
-        if (!ui.open) FloatingActionButton(
-            onClick = onMic, shape = CircleShape,
-            containerColor = MaterialTheme.colorScheme.secondary, contentColor = MaterialTheme.colorScheme.onSecondary,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(28.dp).size(92.dp),
-        ) { Icon(Icons.Filled.Mic, contentDescription = "Hablar con el asistente", modifier = Modifier.size(40.dp)) }
 
         AnimatedVisibility(
             visible = ui.open,
