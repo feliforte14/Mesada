@@ -52,21 +52,21 @@ fun Panel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> 
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
-        Column(Modifier.padding(24.dp), content = content)
+        Column(Modifier.padding(18.dp), content = content)
     }
 }
 
 @Composable
 fun ScreenHeader(eyebrow: String, title: String, action: @Composable () -> Unit = {}) {
-    Row(Modifier.fillMaxWidth().padding(bottom = 24.dp), verticalAlignment = Alignment.Bottom) {
+    Row(Modifier.fillMaxWidth().padding(bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(
                 eyebrow.uppercase(Locale("es", "AR")),
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.labelMedium,
             )
-            Spacer(Modifier.height(4.dp))
-            Text(title, style = MaterialTheme.typography.displayMedium)
+            Spacer(Modifier.height(2.dp))
+            Text(title, style = MaterialTheme.typography.headlineLarge)
         }
         action()
     }
@@ -93,21 +93,21 @@ fun CalorieRing(consumed: Double, goal: Int, modifier: Modifier = Modifier) {
     )
     val track = MaterialTheme.colorScheme.surfaceVariant
     val fill = if (over) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-    Box(modifier.size(230.dp), contentAlignment = Alignment.Center) {
-        Canvas(Modifier.size(230.dp)) {
-            val stroke = Stroke(width = 22.dp.toPx(), cap = StrokeCap.Round)
+    Box(modifier.size(170.dp), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.size(170.dp)) {
+            val stroke = Stroke(width = 16.dp.toPx(), cap = StrokeCap.Round)
             drawArc(track, 0f, 360f, false, style = stroke)
             drawArc(fill, -90f, 360f * progress, false, style = stroke)
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(consumed.kcal(), style = MaterialTheme.typography.displaySmall)
+            Text(consumed.kcal(), style = MaterialTheme.typography.headlineLarge)
             val left = goal - consumed
             Text("kcal", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(2.dp))
             Text(
                 if (left >= 0) "restan ${left.kcal()} de ${goal.thousands()}" else "${(-left).kcal()} de más",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 28.dp),
+                textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 12.dp),
             )
         }
     }
@@ -120,16 +120,16 @@ fun MacroBar(label: String, value: Double, goal: Int, color: Color, unit: String
         animationSpec = tween(600), label = "macro",
     )
     val goalText = if (unit.isBlank()) goal.thousands() else "$goal $unit"
-    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
             Text(label, style = MaterialTheme.typography.titleMedium)
             Text("${value.roundToInt()} / $goalText", color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodyMedium)
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
         LinearProgressIndicator(
             progress = { progress },
-            modifier = Modifier.fillMaxWidth().height(14.dp).clip(RoundedCornerShape(7.dp)),
+            modifier = Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)),
             color = color, trackColor = MaterialTheme.colorScheme.surfaceVariant,
             strokeCap = StrokeCap.Round, drawStopIndicator = {},
         )

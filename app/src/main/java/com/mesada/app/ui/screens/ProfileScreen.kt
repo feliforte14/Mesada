@@ -4,15 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -33,38 +31,47 @@ import kotlin.math.roundToInt
 
 @Composable
 fun ProfileScreen(profile: ProfileEntity?, goals: GoalsEntity, onEdit: () -> Unit) {
-    Column(Modifier.fillMaxSize().padding(28.dp).verticalScroll(rememberScrollState())) {
+    Column(Modifier.fillMaxSize().padding(20.dp)) {
         ScreenHeader("Tu estado actual", "Perfil") {
-            Button(onClick = onEdit, shape = RoundedCornerShape(20.dp), modifier = Modifier.heightIn(min = 56.dp)) {
+            Button(onClick = onEdit, shape = RoundedCornerShape(16.dp), modifier = Modifier.heightIn(min = 48.dp)) {
                 Text("Editar mis datos")
             }
         }
+
         if (profile == null) {
             Text("Todavía no cargaste tus datos.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             return
         }
+
         val imc = if (profile.heightCm > 0) profile.weightKg / (profile.heightCm / 100.0).let { it * it } else 0.0
-        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-            Panel(Modifier.width(460.dp)) {
-                Text("Tus datos", style = MaterialTheme.typography.headlineSmall)
-                Spacer(Modifier.height(10.dp))
-                DataRow("Peso", "${profile.weightKg.clean()} kg")
-                DataRow("Altura", "${profile.heightCm.clean()} cm")
-                DataRow("Edad", "${profile.age} años")
-                DataRow("Sexo", Sex.entries.firstOrNull { it.key == profile.sex }?.label ?: profile.sex)
-                DataRow("Actividad", ActivityLevel.fromKey(profile.activity).label)
-                DataRow("Objetivo", WeightGoal.fromKey(profile.goal).label)
-                DataRow("IMC", "${imc.oneDecimal()} · ${imcLabel(imc)}", last = true)
+
+        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+            Panel(Modifier.weight(1f).fillMaxHeight()) {
+                Text("Tus datos", style = MaterialTheme.typography.titleLarge)
+                Spacer(Modifier.height(8.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.SpaceEvenly) {
+                    DataRow("Peso", "${profile.weightKg.clean()} kg")
+                    DataRow("Altura", "${profile.heightCm.clean()} cm")
+                    DataRow("Edad", "${profile.age} años")
+                    DataRow("Sexo", Sex.entries.firstOrNull { it.key == profile.sex }?.label ?: profile.sex)
+                    DataRow("Actividad", ActivityLevel.fromKey(profile.activity).label)
+                    DataRow("Objetivo", WeightGoal.fromKey(profile.goal).label)
+                    DataRow("IMC", "${imc.oneDecimal()} · ${imcLabel(imc)}", last = true)
+                }
             }
-            Panel(Modifier.width(460.dp)) {
-                Text("Tus objetivos diarios", style = MaterialTheme.typography.headlineSmall)
+
+            Panel(Modifier.weight(1f).fillMaxHeight()) {
+                Text("Tus objetivos diarios", style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(4.dp))
-                Text("Calculados a partir de tus datos.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(10.dp))
-                DataRow("Calorías", "${goals.kcal.thousands()} kcal")
-                DataRow("Proteína", "${goals.protein} g")
-                DataRow("Hidratos", "${goals.carbs} g")
-                DataRow("Grasas", "${goals.fat} g", last = true)
+                Text("Calculados a partir de tus datos.", color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall)
+                Spacer(Modifier.height(12.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.SpaceEvenly) {
+                    DataRow("Calorías", "${goals.kcal.thousands()} kcal")
+                    DataRow("Proteína", "${goals.protein} g")
+                    DataRow("Hidratos", "${goals.carbs} g")
+                    DataRow("Grasas", "${goals.fat} g", last = true)
+                }
             }
         }
     }
@@ -72,12 +79,14 @@ fun ProfileScreen(profile: ProfileEntity?, goals: GoalsEntity, onEdit: () -> Uni
 
 @Composable
 private fun DataRow(label: String, value: String, last: Boolean = false) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f))
-        Text(value, style = MaterialTheme.typography.titleMedium)
+    Column {
+        Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f))
+            Text(value, style = MaterialTheme.typography.titleMedium)
+        }
+        if (!last) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
-    if (!last) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 }
 
 private fun Double.clean(): String = if (this % 1.0 == 0.0) toLong().toString() else oneDecimal()

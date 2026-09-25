@@ -145,100 +145,86 @@ private fun MesadaMain(vm: MesadaViewModel) {
         }
     }
 
-    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).windowInsetsPadding(WindowInsets.safeDrawing)) {
-        Column(Modifier.fillMaxSize()) {
-            TopBar(current = screen, onSelect = { screen = it }, onMic = onMic)
-            Box(Modifier.fillMaxWidth().weight(1f)) {
-                Box(Modifier.widthIn(max = 1200.dp).fillMaxSize().align(Alignment.TopCenter)) {
-                    when (screen) {
-                        Screen.TODAY -> TodayScreen(
-                            day = day, onRemove = vm::remove,
-                            onAddTo = { vm.selectedMeal = it; screen = Screen.ADD },
-                            onReset = vm::clearDay,
-                        )
-                        Screen.ADD -> AddScreen(
-                            foods = foods, selectedMeal = vm.selectedMeal, onSelectMeal = { vm.selectedMeal = it },
-                            onAdd = { food, qty -> vm.addFood(food, qty) },
-                            onCreateFood = vm::createFood, onUpdateFood = vm::updateFood, onDeleteFood = vm::deleteFood,
-                        )
-                        Screen.KITCHEN -> KitchenScreen(
-                            day = day, timer = timer, recipes = recipes, foods = foods,
-                            onTimerPreset = { vm.timer.set(it) }, onTimerToggle = vm.timer::toggle,
-                            onTimerReset = vm.timer::reset,
-                            onAddRecipe = vm::addRecipe, onCreateRecipe = vm::createRecipe, onDeleteRecipe = vm::deleteRecipe,
-                            onGoal = vm::changeGoal, onEditProfile = vm::editProfile,
-                            scaleEnabled = scaleEnabled, scaleConnection = scaleConnection, scaleGrams = scaleGrams,
-                            onScaleToggle = onScaleToggle,
-                        )
-                        Screen.EXERCISE -> ExerciseScreen(day = day, onSteps = vm::changeSteps)
-                        Screen.HISTORY -> HistoryScreen(history)
-                        Screen.REWARDS -> RewardsScreen(day = day, history = history)
-                        Screen.PROFILE -> ProfileScreen(profile = profile, goals = day.goals, onEdit = vm::editProfile)
+    Row(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).windowInsetsPadding(WindowInsets.safeDrawing)) {
+        NavigationRail(
+            containerColor = MaterialTheme.colorScheme.inverseSurface,
+            contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+            header = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 12.dp)) {
+                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(44.dp)) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text("N", color = MaterialTheme.colorScheme.onPrimary,
+                                style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        }
                     }
+                    Spacer(Modifier.height(6.dp))
+                    Text("Nomi", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.inverseOnSurface)
+                    Spacer(Modifier.height(12.dp))
+                    FloatingActionButton(
+                        onClick = onMic, shape = CircleShape,
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.onSecondary,
+                        modifier = Modifier.size(48.dp),
+                    ) { Icon(Icons.Filled.Mic, contentDescription = "Hablar con el asistente", modifier = Modifier.size(24.dp)) }
                 }
+            },
+            modifier = Modifier.fillMaxHeight(),
+        ) {
+            Spacer(Modifier.weight(1f))
+            Screen.entries.forEach { s ->
+                val selected = screen == s
+                NavigationRailItem(
+                    selected = selected,
+                    onClick = { screen = s },
+                    icon = { Icon(s.icon, contentDescription = s.label, modifier = Modifier.size(24.dp)) },
+                    label = { Text(s.label, style = MaterialTheme.typography.labelSmall) },
+                    colors = NavigationRailItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.7f),
+                        unselectedTextColor = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.7f),
+                    ),
+                    modifier = Modifier.padding(vertical = 2.dp),
+                )
+            }
+            Spacer(Modifier.weight(1f))
+        }
+
+        Box(Modifier.weight(1f).fillMaxHeight()) {
+            when (screen) {
+                Screen.TODAY -> TodayScreen(
+                    day = day, onRemove = vm::remove,
+                    onAddTo = { vm.selectedMeal = it; screen = Screen.ADD },
+                    onReset = vm::clearDay,
+                )
+                Screen.ADD -> AddScreen(
+                    foods = foods, selectedMeal = vm.selectedMeal, onSelectMeal = { vm.selectedMeal = it },
+                    onAdd = { food, qty -> vm.addFood(food, qty) },
+                    onCreateFood = vm::createFood, onUpdateFood = vm::updateFood, onDeleteFood = vm::deleteFood,
+                )
+                Screen.KITCHEN -> KitchenScreen(
+                    day = day, timer = timer, recipes = recipes, foods = foods,
+                    onTimerPreset = { vm.timer.set(it) }, onTimerToggle = vm.timer::toggle,
+                    onTimerReset = vm.timer::reset,
+                    onAddRecipe = vm::addRecipe, onCreateRecipe = vm::createRecipe, onDeleteRecipe = vm::deleteRecipe,
+                    onGoal = vm::changeGoal, onEditProfile = vm::editProfile,
+                    scaleEnabled = scaleEnabled, scaleConnection = scaleConnection, scaleGrams = scaleGrams,
+                    onScaleToggle = onScaleToggle,
+                )
+                Screen.EXERCISE -> ExerciseScreen(day = day, onSteps = vm::changeSteps)
+                Screen.HISTORY -> HistoryScreen(history)
+                Screen.REWARDS -> RewardsScreen(day = day, history = history)
+                Screen.PROFILE -> ProfileScreen(profile = profile, goals = day.goals, onEdit = vm::editProfile)
             }
         }
 
         AnimatedVisibility(
             visible = ui.open,
             enter = slideInHorizontally { it }, exit = slideOutHorizontally { it },
-            modifier = Modifier.align(Alignment.CenterEnd),
         ) {
             AssistantPanel(ui, onMic = onMic, onSend = vm::send, onClose = vm::closeAssistant, onToggleSpeak = vm::toggleSpeak)
-        }
-    }
-}
-
-@Composable
-private fun TopBar(current: Screen, onSelect: (Screen) -> Unit, onMic: () -> Unit) {
-    Surface(color = MaterialTheme.colorScheme.inverseSurface, contentColor = MaterialTheme.colorScheme.inverseOnSurface) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(44.dp)) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text("N", color = MaterialTheme.colorScheme.onPrimary,
-                        style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                }
-            }
-            Spacer(Modifier.width(12.dp))
-            Text("Nomi", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
-            Spacer(Modifier.weight(1f))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
-            ) {
-                Screen.entries.forEach { s -> TopTab(s, current == s) { onSelect(s) } }
-            }
-            Spacer(Modifier.weight(1f))
-            FloatingActionButton(
-                onClick = onMic, shape = CircleShape,
-                containerColor = MaterialTheme.colorScheme.secondary,
-                contentColor = MaterialTheme.colorScheme.onSecondary,
-                modifier = Modifier.size(56.dp),
-            ) { Icon(Icons.Filled.Mic, contentDescription = "Hablar con el asistente", modifier = Modifier.size(28.dp)) }
-        }
-    }
-}
-
-@Composable
-private fun TopTab(screen: Screen, selected: Boolean, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(18.dp),
-        color = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
-        contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.inverseOnSurface,
-    ) {
-        Row(
-            Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Icon(screen.icon, contentDescription = null, modifier = Modifier.size(22.dp))
-            Text(screen.label, style = MaterialTheme.typography.titleSmall,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
         }
     }
 }

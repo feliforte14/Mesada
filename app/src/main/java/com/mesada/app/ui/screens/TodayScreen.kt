@@ -4,17 +4,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
@@ -62,28 +59,39 @@ fun TodayScreen(
     val dateLabel = LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE d 'de' MMMM", Locale("es", "AR")))
         .replaceFirstChar { it.uppercase() }
 
-    Column(Modifier.fillMaxSize().padding(28.dp)) {
+    Column(Modifier.fillMaxSize().padding(20.dp)) {
         ScreenHeader(dateLabel, "Tu día") {
-            OutlinedButton(onClick = { confirmReset = true }, modifier = Modifier.heightIn(min = 56.dp)) {
+            OutlinedButton(onClick = { confirmReset = true }, modifier = Modifier.heightIn(min = 48.dp)) {
                 Text("Empezar día nuevo")
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-            Panel(Modifier.width(340.dp).verticalScroll(rememberScrollState())) {
+        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+            Panel(Modifier.width(310.dp).fillMaxHeight()) {
                 CalorieRing(day.totals.kcal, day.goals.kcal, Modifier.align(Alignment.CenterHorizontally))
-                Spacer(Modifier.padding(8.dp))
+                Spacer(Modifier.height(12.dp))
                 val t = day.totals
                 MacroBar("Proteína", t.protein, day.goals.protein, MaterialTheme.colorScheme.primary)
                 MacroBar("Hidratos", t.carbs, day.goals.carbs, Palette.Saffron)
                 MacroBar("Grasas", t.fat, day.goals.fat, MaterialTheme.colorScheme.tertiary)
             }
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(320.dp),
-                horizontalArrangement = Arrangement.spacedBy(18.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
-                modifier = Modifier.weight(1f),
+            Column(
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                items(Meal.entries) { meal -> MealCard(meal, day.meal(meal), onRemove) { onAddTo(meal) } }
+                Row(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    MealCard(Meal.BREAKFAST, day.meal(Meal.BREAKFAST), onRemove, { onAddTo(Meal.BREAKFAST) }, Modifier.weight(1f).fillMaxHeight())
+                    MealCard(Meal.LUNCH, day.meal(Meal.LUNCH), onRemove, { onAddTo(Meal.LUNCH) }, Modifier.weight(1f).fillMaxHeight())
+                }
+                Row(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    MealCard(Meal.SNACK, day.meal(Meal.SNACK), onRemove, { onAddTo(Meal.SNACK) }, Modifier.weight(1f).fillMaxHeight())
+                    MealCard(Meal.DINNER, day.meal(Meal.DINNER), onRemove, { onAddTo(Meal.DINNER) }, Modifier.weight(1f).fillMaxHeight())
+                }
             }
         }
     }
@@ -98,36 +106,47 @@ fun TodayScreen(
 }
 
 @Composable
-private fun MealCard(meal: Meal, entries: List<EntryEntity>, onRemove: (Long) -> Unit, onAdd: () -> Unit) {
-    Panel(Modifier.heightIn(min = 220.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-            Text(meal.label, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
-            Text("${entries.sumOf { it.kcal }.kcal()} kcal", color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.titleMedium)
-        }
-        Spacer(Modifier.padding(4.dp))
-        if (entries.isEmpty()) {
-            Text("Todavía no registraste nada.", color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = 14.dp))
-        }
-        entries.forEach { e ->
-            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(e.displayName, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text("${e.qtyLabel} · ${e.macros.protein.roundToInt()} g prot",
-                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Text(e.kcal.kcal(), style = MaterialTheme.typography.titleMedium)
-                IconButton(onClick = { onRemove(e.id) }, modifier = Modifier.padding(start = 4.dp)) {
-                    Icon(Icons.Filled.Close, contentDescription = "Quitar ${e.displayName}",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun MealCard(meal: Meal, entries: List<EntryEntity>, onRemove: (Long) -> Unit, onAdd: () -> Unit, modifier: Modifier = Modifier) {
+    Panel(modifier) {
+        Column(Modifier.fillMaxSize()) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+                Text(meal.label, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                Text("${entries.sumOf { it.kcal }.kcal()} kcal", color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.titleMedium)
+            }
+            Spacer(Modifier.height(8.dp))
+            Column(Modifier.weight(1f)) {
+                if (entries.isEmpty()) {
+                    Text("Todavía no registraste nada.", color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 8.dp))
+                } else {
+                    val visible = entries.take(3)
+                    visible.forEach { e ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(e.displayName, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text("${e.qtyLabel} · ${e.macros.protein.roundToInt()} g prot",
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Text(e.kcal.kcal(), style = MaterialTheme.typography.bodyMedium)
+                            IconButton(onClick = { onRemove(e.id) }, modifier = Modifier.padding(start = 2.dp)) {
+                                Icon(Icons.Filled.Close, contentDescription = "Quitar ${e.displayName}",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                    if (entries.size > 3) {
+                        Text("+ ${entries.size - 3} más", style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 2.dp))
+                    }
                 }
             }
-        }
-        Spacer(Modifier.padding(4.dp))
-        FilledTonalButton(onClick = onAdd, shape = RoundedCornerShape(18.dp),
-            modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp)) {
-            Text("+ Agregar a ${meal.label.lowercase()}")
+            FilledTonalButton(
+                onClick = onAdd, shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
+            ) {
+                Text("+ Agregar a ${meal.label.lowercase()}", style = MaterialTheme.typography.labelLarge)
+            }
         }
     }
 }
