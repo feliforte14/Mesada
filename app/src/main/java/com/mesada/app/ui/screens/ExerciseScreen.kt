@@ -22,19 +22,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mesada.app.data.DayState
+import com.mesada.app.data.kcalBurnedFor
 import com.mesada.app.ui.MacroBar
 import com.mesada.app.ui.Panel
 import com.mesada.app.ui.RoundButton
 import com.mesada.app.ui.ScreenHeader
 import com.mesada.app.ui.thousands
-import kotlin.math.roundToInt
 
 private const val STEP_GOAL = 10_000
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ExerciseScreen(day: DayState, onSteps: (Int) -> Unit) {
-    val burned = (day.steps * 0.04).roundToInt()
+    val burned = kcalBurnedFor(day.steps)
 
     Column(Modifier.fillMaxSize().padding(20.dp)) {
         ScreenHeader("Sumá el movimiento de tu día", "Ejercicio")

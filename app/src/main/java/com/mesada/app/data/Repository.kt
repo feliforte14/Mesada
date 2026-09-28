@@ -45,6 +45,9 @@ fun CustomFoodEntity.toFood() = Food(
     gramsPerPiece = gramsPerPiece, unitSingular = unitSingular, unitPlural = unitPlural,
 )
 
+/** Estimación de kcal quemadas por pasos caminados (única fuente: la usan DaySummary y Ejercicio). */
+fun kcalBurnedFor(steps: Int): Int = (steps * 0.04).roundToInt()
+
 /** Un día pasado con sus totales, pasos y detalle, para el historial. */
 data class DaySummary(
     val date: String,
@@ -53,7 +56,7 @@ data class DaySummary(
     val entries: List<EntryEntity>,
 ) {
     fun meal(m: Meal) = entries.filter { it.meal == m.key }
-    val burnedKcal: Int get() = (steps * 0.04).roundToInt()
+    val burnedKcal: Int get() = kcalBurnedFor(steps)
 }
 
 class MesadaRepository(private val dao: MesadaDao) {

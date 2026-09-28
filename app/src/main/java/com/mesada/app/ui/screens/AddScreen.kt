@@ -51,6 +51,9 @@ import kotlin.math.roundToInt
 private fun Double.fieldText(): String = if (this == 0.0) "" else pretty()
 private const val PAGE_SIZE = 6
 
+/** Acepta coma o punto decimal (el teclado numérico en es-AR suele tipear coma). */
+private fun String.toMacroDoubleOrNull(): Double? = replace(',', '.').toDoubleOrNull()
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AddScreen(
@@ -310,8 +313,12 @@ private fun FoodFormDialog(
     var unitSingular by remember { mutableStateOf(initial?.unitSingular?.ifBlank { "unidad" } ?: "unidad") }
     var unitPlural by remember { mutableStateOf(initial?.unitPlural?.ifBlank { "unidades" } ?: "unidades") }
 
-    val valid = name.isNotBlank() && kcal.toDoubleOrNull() != null &&
-        (measure != Measure.PIECE || (gramsPerPiece.toDoubleOrNull()?.let { it > 0 } == true))
+    // Proteína/hidratos/grasas son opcionales (blanco = 0), pero si el usuario escribió algo
+    // tiene que ser un número válido; si no, no dejamos guardar en vez de perder el valor en silencio.
+    fun optionalValid(text: String) = text.isBlank() || text.toMacroDoubleOrNull() != null
+    val valid = name.isNotBlank() && kcal.toMacroDoubleOrNull() != null &&
+        optionalValid(protein) && optionalValid(carbs) && optionalValid(fat) &&
+        (measure != Measure.PIECE || (gramsPerPiece.toMacroDoubleOrNull()?.let { it > 0 } == true))
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -322,10 +329,10 @@ private fun FoodFormDialog(
                     onSubmit(
                         name.trim(), category, measure,
                         Macros(
-                            kcal.toDoubleOrNull() ?: 0.0, protein.toDoubleOrNull() ?: 0.0,
-                            carbs.toDoubleOrNull() ?: 0.0, fat.toDoubleOrNull() ?: 0.0,
+                            kcal.toMacroDoubleOrNull() ?: 0.0, protein.toMacroDoubleOrNull() ?: 0.0,
+                            carbs.toMacroDoubleOrNull() ?: 0.0, fat.toMacroDoubleOrNull() ?: 0.0,
                         ),
-                        gramsPerPiece.toDoubleOrNull() ?: 0.0,
+                        gramsPerPiece.toMacroDoubleOrNull() ?: 0.0,
                         unitSingular.trim().ifBlank { "unidad" }, unitPlural.trim().ifBlank { "unidades" },
                     )
                 },
