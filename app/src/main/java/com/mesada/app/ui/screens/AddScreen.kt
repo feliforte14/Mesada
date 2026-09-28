@@ -45,14 +45,12 @@ import com.mesada.app.data.pretty
 import com.mesada.app.ui.Panel
 import com.mesada.app.ui.RoundButton
 import com.mesada.app.ui.ScreenHeader
+import com.mesada.app.ui.toDecimalOrNull
 import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 private fun Double.fieldText(): String = if (this == 0.0) "" else pretty()
 private const val PAGE_SIZE = 6
-
-/** Acepta coma o punto decimal (el teclado numérico en es-AR suele tipear coma). */
-private fun String.toMacroDoubleOrNull(): Double? = replace(',', '.').toDoubleOrNull()
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -315,10 +313,10 @@ private fun FoodFormDialog(
 
     // Proteína/hidratos/grasas son opcionales (blanco = 0), pero si el usuario escribió algo
     // tiene que ser un número válido; si no, no dejamos guardar en vez de perder el valor en silencio.
-    fun optionalValid(text: String) = text.isBlank() || text.toMacroDoubleOrNull() != null
-    val valid = name.isNotBlank() && kcal.toMacroDoubleOrNull() != null &&
+    fun optionalValid(text: String) = text.isBlank() || text.toDecimalOrNull() != null
+    val valid = name.isNotBlank() && kcal.toDecimalOrNull() != null &&
         optionalValid(protein) && optionalValid(carbs) && optionalValid(fat) &&
-        (measure != Measure.PIECE || (gramsPerPiece.toMacroDoubleOrNull()?.let { it > 0 } == true))
+        (measure != Measure.PIECE || (gramsPerPiece.toDecimalOrNull()?.let { it > 0 } == true))
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -329,10 +327,10 @@ private fun FoodFormDialog(
                     onSubmit(
                         name.trim(), category, measure,
                         Macros(
-                            kcal.toMacroDoubleOrNull() ?: 0.0, protein.toMacroDoubleOrNull() ?: 0.0,
-                            carbs.toMacroDoubleOrNull() ?: 0.0, fat.toMacroDoubleOrNull() ?: 0.0,
+                            kcal.toDecimalOrNull() ?: 0.0, protein.toDecimalOrNull() ?: 0.0,
+                            carbs.toDecimalOrNull() ?: 0.0, fat.toDecimalOrNull() ?: 0.0,
                         ),
-                        gramsPerPiece.toMacroDoubleOrNull() ?: 0.0,
+                        gramsPerPiece.toDecimalOrNull() ?: 0.0,
                         unitSingular.trim().ifBlank { "unidad" }, unitPlural.trim().ifBlank { "unidades" },
                     )
                 },

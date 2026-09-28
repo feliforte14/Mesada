@@ -22,7 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mesada.app.data.DayState
-import com.mesada.app.data.kcalBurnedFor
+import com.mesada.app.domain.kcalBurnedFor
 import com.mesada.app.ui.MacroBar
 import com.mesada.app.ui.Panel
 import com.mesada.app.ui.RoundButton

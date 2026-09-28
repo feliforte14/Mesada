@@ -34,6 +34,7 @@ import com.mesada.app.domain.Sex
 import com.mesada.app.domain.WeightGoal
 import com.mesada.app.ui.Panel
 import com.mesada.app.ui.ScreenHeader
+import com.mesada.app.ui.toDecimalOrNull
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -49,8 +50,8 @@ fun OnboardingScreen(
     var activity by remember { mutableStateOf(ActivityLevel.fromKey(initial?.activity ?: ActivityLevel.MODERATE.key)) }
     var goal by remember { mutableStateOf(WeightGoal.fromKey(initial?.goal ?: WeightGoal.MAINTAIN.key)) }
 
-    val weightNum = weight.toDoubleOrNull()
-    val heightNum = height.toDoubleOrNull()
+    val weightNum = weight.toDecimalOrNull()
+    val heightNum = height.toDecimalOrNull()
     val ageNum = age.toIntOrNull()
     val valid = (weightNum?.let { it > 0 } ?: false) && (heightNum?.let { it > 0 } ?: false) && (ageNum?.let { it > 0 } ?: false)
 
@@ -65,7 +66,7 @@ fun OnboardingScreen(
 
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         OutlinedTextField(
-                            value = weight, onValueChange = { weight = it.filter { c -> c.isDigit() || c == '.' } },
+                            value = weight, onValueChange = { weight = it.filter { c -> c.isDigit() || c == '.' || c == ',' } },
                             label = { Text("Peso (kg)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             modifier = Modifier.weight(1f),
                         )

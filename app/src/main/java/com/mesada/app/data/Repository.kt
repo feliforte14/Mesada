@@ -9,12 +9,12 @@ import com.mesada.app.data.db.GoalsEntity
 import com.mesada.app.data.db.MesadaDao
 import com.mesada.app.data.db.ProfileEntity
 import com.mesada.app.domain.GoalsCalculator
+import com.mesada.app.domain.kcalBurnedFor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 import java.util.UUID
-import kotlin.math.roundToInt
 
 data class DayState(
     val date: String,
@@ -44,9 +44,6 @@ fun CustomFoodEntity.toFood() = Food(
     measure = Measure.valueOf(measure), per100 = Macros(kcal, protein, carbs, fat),
     gramsPerPiece = gramsPerPiece, unitSingular = unitSingular, unitPlural = unitPlural,
 )
-
-/** Estimación de kcal quemadas por pasos caminados (única fuente: la usan DaySummary y Ejercicio). */
-fun kcalBurnedFor(steps: Int): Int = (steps * 0.04).roundToInt()
 
 /** Un día pasado con sus totales, pasos y detalle, para el historial. */
 data class DaySummary(

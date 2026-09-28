@@ -4,3 +4,7 @@ local.properties
 .idea/
 *.iml
 .DS_Store
+
+# Generada por Android Studio, fija la toolchain JVM a la versión instalada
+# localmente (vía foojay); commitearla puede romper el build en otras máquinas/CI.
+gradle/gradle-daemon-jvm.properties

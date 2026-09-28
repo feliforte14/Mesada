@@ -4,6 +4,9 @@ import com.mesada.app.data.db.GoalsEntity
 import com.mesada.app.data.db.ProfileEntity
 import kotlin.math.roundToInt
 
+/** Estimación de kcal quemadas por pasos caminados. */
+fun kcalBurnedFor(steps: Int): Int = (steps * 0.04).roundToInt()
+
 enum class Sex(val key: String, val label: String) { MALE("M", "Varón"), FEMALE("F", "Mujer") }
 
 enum class ActivityLevel(val key: String, val label: String, val factor: Double) {

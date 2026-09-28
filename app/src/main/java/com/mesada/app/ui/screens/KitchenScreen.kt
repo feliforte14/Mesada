@@ -115,7 +115,7 @@ fun KitchenScreen(
                 }
             }
 
-            // Columna 2 (60%): Herramientas (Temporizador, Balanza, Objetivos)
+            // Columna 2 (60%): Herramientas (Temporizador, Objetivos)
             Column(
                 modifier = Modifier.weight(1.3f).fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(16.dp),

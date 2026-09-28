@@ -43,6 +43,9 @@ private val arNumber = NumberFormat.getIntegerInstance(Locale("es", "AR"))
 fun Double.kcal(): String = arNumber.format(roundToInt())
 fun Int.thousands(): String = arNumber.format(this)
 
+/** Acepta coma o punto decimal (el teclado numérico en es-AR suele tipear coma). */
+fun String.toDecimalOrNull(): Double? = replace(',', '.').toDoubleOrNull()
+
 /** Tarjeta base: superficie clara con borde suave en vez de sombra dura, para un look más liviano. */
 @Composable
 fun Panel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
