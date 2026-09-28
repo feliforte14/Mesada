@@ -23,7 +23,6 @@ import com.mesada.app.domain.MealIdeas
 import com.mesada.app.domain.RecipeUi
 import com.mesada.app.domain.macrosOf
 import com.mesada.app.domain.parseRecipeItems
-import com.mesada.app.hardware.ScaleConnectionState
 import com.mesada.app.voice.SpeechEvent
 import com.mesada.app.voice.SpeechInput
 import com.mesada.app.voice.Speaker
@@ -100,20 +99,6 @@ class MesadaViewModel(app: Application) : AndroidViewModel(app) {
 
     val timer = KitchenTimer(viewModelScope)
     var selectedMeal by mutableStateOf(Meal.forNow())
-
-    // --- Balanza Bluetooth (opcional) ---
-    private val scaleSource = container.scaleSource
-    val scaleEnabled: StateFlow<Boolean> = container.hardwareSettings.scaleEnabled
-    val scaleConnection: StateFlow<ScaleConnectionState> = scaleSource.connectionState
-    val scaleGrams: StateFlow<Double?> = scaleSource.grams
-    fun setScaleEnabled(enabled: Boolean) {
-        container.hardwareSettings.setScaleEnabled(enabled)
-        if (enabled) scaleSource.start() else scaleSource.stop()
-    }
-
-    init {
-        if (scaleEnabled.value) scaleSource.start()
-    }
 
     private val speaker = Speaker(app)
     private val speech = SpeechInput(app)
@@ -235,7 +220,6 @@ class MesadaViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         speaker.shutdown()
-        scaleSource.stop()
         super.onCleared()
     }
 }

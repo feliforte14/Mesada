@@ -19,7 +19,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -40,7 +39,6 @@ import com.mesada.app.domain.RecipeUi
 import com.mesada.app.domain.TimerState
 import com.mesada.app.domain.macrosOf
 import com.mesada.app.domain.suggestRecipes
-import com.mesada.app.hardware.ScaleConnectionState
 import com.mesada.app.ui.Panel
 import com.mesada.app.ui.RoundButton
 import com.mesada.app.ui.ScreenHeader
@@ -63,10 +61,6 @@ fun KitchenScreen(
     onDeleteRecipe: (String) -> Unit,
     onGoal: (GoalField, Int) -> Unit,
     onEditProfile: () -> Unit,
-    scaleEnabled: Boolean,
-    scaleConnection: ScaleConnectionState,
-    scaleGrams: Double?,
-    onScaleToggle: (Boolean) -> Unit,
 ) {
     val remK = day.remainingKcal
     val remP = day.remainingProtein
@@ -126,58 +120,30 @@ fun KitchenScreen(
                 modifier = Modifier.weight(1.3f).fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                // Fila Superior: Temporizador y Balanza side by side
-                Row(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    // Temporizador
-                    Panel(Modifier.weight(1.2f).fillMaxHeight()) {
-                        Text("Temporizador", style = MaterialTheme.typography.titleMedium)
-                        Text(timer.label, fontSize = 56.sp, textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.displayMedium,
-                            color = if (timer.finished) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
-                            listOf(3.0, 5.0, 10.0, 15.0).forEach { min ->
-                                OutlinedButton(onClick = { onTimerPreset(min) }, modifier = Modifier.weight(1f).heightIn(min = 36.dp)) {
-                                    Text("${min.roundToInt()}′", style = MaterialTheme.typography.labelSmall)
-                                }
+                // Temporizador
+                Panel(Modifier.fillMaxWidth().weight(1f)) {
+                    Text("Temporizador", style = MaterialTheme.typography.titleMedium)
+                    Text(timer.label, fontSize = 56.sp, textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.displayMedium,
+                        color = if (timer.finished) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
+                        listOf(3.0, 5.0, 10.0, 15.0).forEach { min ->
+                            OutlinedButton(onClick = { onTimerPreset(min) }, modifier = Modifier.weight(1f).heightIn(min = 36.dp)) {
+                                Text("${min.roundToInt()}′", style = MaterialTheme.typography.labelSmall)
                             }
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                            Button(onClick = onTimerToggle, modifier = Modifier.weight(2f).heightIn(min = 44.dp), shape = RoundedCornerShape(14.dp)) {
-                                Text(when {
-                                    timer.running -> "Pausar"
-                                    timer.leftSec in 1 until timer.totalSec -> "Seguir"
-                                    else -> "Iniciar"
-                                }, style = MaterialTheme.typography.labelLarge)
-                            }
-                            OutlinedButton(onClick = onTimerReset, modifier = Modifier.weight(1f).heightIn(min = 44.dp)) { Text("Reset") }
                         }
                     }
-
-                    // Balanza
-                    Panel(Modifier.weight(1f).fillMaxHeight()) {
-                        Text("Balanza Bluetooth", style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            when {
-                                !scaleEnabled -> "Desactivada"
-                                scaleConnection == ScaleConnectionState.CONNECTED && scaleGrams != null ->
-                                    "${scaleGrams.roundToInt()} g en bandeja"
-                                scaleConnection == ScaleConnectionState.CONNECTING -> "Buscando…"
-                                else -> "Activada, conectando…"
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                            Text("Activar", style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
-                            Switch(checked = scaleEnabled, onCheckedChange = onScaleToggle)
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                        Button(onClick = onTimerToggle, modifier = Modifier.weight(2f).heightIn(min = 44.dp), shape = RoundedCornerShape(14.dp)) {
+                            Text(when {
+                                timer.running -> "Pausar"
+                                timer.leftSec in 1 until timer.totalSec -> "Seguir"
+                                else -> "Iniciar"
+                            }, style = MaterialTheme.typography.labelLarge)
                         }
+                        OutlinedButton(onClick = onTimerReset, modifier = Modifier.weight(1f).heightIn(min = 44.dp)) { Text("Reset") }
                     }
                 }
 
