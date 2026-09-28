@@ -32,9 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mesada.app.GoalField
 import com.mesada.app.data.DayState
 import com.mesada.app.data.Food
+import com.mesada.app.domain.GoalField
 import com.mesada.app.domain.RecipeUi
 import com.mesada.app.domain.TimerState
 import com.mesada.app.domain.macrosOf

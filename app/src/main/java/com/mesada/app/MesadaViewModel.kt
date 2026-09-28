@@ -18,14 +18,14 @@ import com.mesada.app.data.Macros
 import com.mesada.app.data.Meal
 import com.mesada.app.data.Measure
 import com.mesada.app.data.db.ProfileEntity
+import com.mesada.app.domain.GoalField
 import com.mesada.app.domain.KitchenTimer
 import com.mesada.app.domain.MealIdeas
 import com.mesada.app.domain.RecipeUi
 import com.mesada.app.domain.macrosOf
 import com.mesada.app.domain.parseRecipeItems
+import com.mesada.app.domain.withDelta
 import com.mesada.app.voice.SpeechEvent
-import com.mesada.app.voice.SpeechInput
-import com.mesada.app.voice.Speaker
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,25 +37,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-enum class VoiceMode { IDLE, LISTENING, THINKING }
-enum class Role { USER, ASSISTANT, ACTION, ERROR }
-enum class GoalField { KCAL, PROTEIN, CARBS, FAT }
-
-sealed interface ProfileLoadState {
-    data object Loading : ProfileLoadState
-    data class Loaded(val profile: ProfileEntity?) : ProfileLoadState
-}
-
-data class ChatMessage(val id: Long, val role: Role, val text: String)
-
-data class AssistantUi(
-    val open: Boolean = false,
-    val mode: VoiceMode = VoiceMode.IDLE,
-    val partial: String = "",
-    val messages: List<ChatMessage> = emptyList(),
-    val speak: Boolean = true,
-)
 
 class MesadaViewModel(app: Application) : AndroidViewModel(app) {
     private val container = (app as MesadaApp).container
@@ -100,8 +81,9 @@ class MesadaViewModel(app: Application) : AndroidViewModel(app) {
     val timer = KitchenTimer(viewModelScope)
     var selectedMeal by mutableStateOf(Meal.forNow())
 
-    private val speaker = Speaker(app)
-    private val speech = SpeechInput(app)
+    private val speaker = container.speaker
+    private val speech = container.speech
+    // No sale del container: AssistantTools necesita `timer`, que vive en el scope de este ViewModel.
     private val brain = Assistant(container.claude, AssistantTools(repo, timer))
 
     private val _assistant = MutableStateFlow(AssistantUi())
@@ -133,14 +115,7 @@ class MesadaViewModel(app: Application) : AndroidViewModel(app) {
     fun createRecipe(name: String, items: List<Pair<String, Double>>) = viewModelScope.launch { repo.createRecipe(name, items) }
     fun deleteRecipe(id: String) = viewModelScope.launch { repo.deleteRecipe(id) }
     fun changeGoal(field: GoalField, delta: Int) = viewModelScope.launch {
-        repo.updateGoals { g ->
-            when (field) {
-                GoalField.KCAL -> g.copy(kcal = (g.kcal + delta).coerceAtLeast(0))
-                GoalField.PROTEIN -> g.copy(protein = (g.protein + delta).coerceAtLeast(0))
-                GoalField.CARBS -> g.copy(carbs = (g.carbs + delta).coerceAtLeast(0))
-                GoalField.FAT -> g.copy(fat = (g.fat + delta).coerceAtLeast(0))
-            }
-        }
+        repo.updateGoals { g -> g.withDelta(field, delta) }
     }
 
     // --- Asistente de voz ---

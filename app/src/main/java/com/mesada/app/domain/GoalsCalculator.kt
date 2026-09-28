@@ -7,6 +7,16 @@ import kotlin.math.roundToInt
 /** Estimación de kcal quemadas por pasos caminados. */
 fun kcalBurnedFor(steps: Int): Int = (steps * 0.04).roundToInt()
 
+enum class GoalField { KCAL, PROTEIN, CARBS, FAT }
+
+/** Aplica un ajuste manual (botones +/− de Perfil) sin dejar que un campo baje de 0. */
+fun GoalsEntity.withDelta(field: GoalField, delta: Int): GoalsEntity = when (field) {
+    GoalField.KCAL -> copy(kcal = (kcal + delta).coerceAtLeast(0))
+    GoalField.PROTEIN -> copy(protein = (protein + delta).coerceAtLeast(0))
+    GoalField.CARBS -> copy(carbs = (carbs + delta).coerceAtLeast(0))
+    GoalField.FAT -> copy(fat = (fat + delta).coerceAtLeast(0))
+}
+
 enum class Sex(val key: String, val label: String) { MALE("M", "Varón"), FEMALE("F", "Mujer") }
 
 enum class ActivityLevel(val key: String, val label: String, val factor: Double) {
