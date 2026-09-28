@@ -1,6 +1,7 @@
 package com.mesada.app.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,11 +11,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Surface
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +45,8 @@ import com.mesada.app.data.db.EntryEntity
 import com.mesada.app.ui.CalorieRing
 import com.mesada.app.ui.MacroBar
 import com.mesada.app.ui.Panel
+import com.mesada.app.ui.mealColor
+import com.mesada.app.ui.mealIcon
 import com.mesada.app.ui.ScreenHeader
 import com.mesada.app.ui.kcal
 import com.mesada.app.ui.theme.Palette
@@ -107,9 +114,16 @@ fun TodayScreen(
 
 @Composable
 private fun MealCard(meal: Meal, entries: List<EntryEntity>, onRemove: (Long) -> Unit, onAdd: () -> Unit, modifier: Modifier = Modifier) {
+    val accent = mealColor(meal)
     Panel(modifier) {
         Column(Modifier.fillMaxSize()) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Surface(shape = CircleShape, color = accent.copy(alpha = 0.14f), modifier = Modifier.size(36.dp)) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(mealIcon(meal), contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
+                    }
+                }
+                Spacer(Modifier.width(10.dp))
                 Text(meal.label, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
                 Text("${entries.sumOf { it.kcal }.kcal()} kcal", color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.titleMedium)
@@ -143,6 +157,7 @@ private fun MealCard(meal: Meal, entries: List<EntryEntity>, onRemove: (Long) ->
             }
             FilledTonalButton(
                 onClick = onAdd, shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.filledTonalButtonColors(containerColor = accent.copy(alpha = 0.14f), contentColor = accent),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
             ) {
                 Text("+ Agregar a ${meal.label.lowercase()}", style = MaterialTheme.typography.labelLarge)

@@ -261,7 +261,7 @@ private fun PortionPanel(
         }
         Spacer(Modifier.height(12.dp))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             food.presets.forEach { p ->
                 OutlinedButton(onClick = { qty = p }, modifier = Modifier.weight(1f).heightIn(min = 44.dp)) {
                     Text(if (food.measure == Measure.PIECE) p.pretty() else "${p.pretty()} ${if (food.measure == Measure.ML) "ml" else "g"}",
@@ -343,7 +343,7 @@ private fun FoodFormDialog(
                 OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true,
                     label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Column(Modifier.weight(1f)) {
                         Text("Categoría", style = MaterialTheme.typography.labelMedium)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -363,7 +363,7 @@ private fun FoodFormDialog(
                     }
                 }
                 Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     MacroField("kcal/100g", kcal, { kcal = it }, Modifier.weight(1f))
                     MacroField("Prot g", protein, { protein = it }, Modifier.weight(1f))
                     MacroField("Hidr g", carbs, { carbs = it }, Modifier.weight(1f))

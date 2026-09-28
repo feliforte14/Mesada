@@ -11,10 +11,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -39,6 +41,8 @@ import com.mesada.app.export.HistoryPdf
 import com.mesada.app.ui.Panel
 import com.mesada.app.ui.ScreenHeader
 import com.mesada.app.ui.kcal
+import com.mesada.app.ui.mealColor
+import com.mesada.app.ui.mealIcon
 import com.mesada.app.ui.thousands
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -191,13 +195,18 @@ private fun ActivityPanel(history: List<DaySummary>, modifier: Modifier) {
 @Composable
 private fun MealDetailBox(meal: Meal, day: DaySummary, modifier: Modifier = Modifier) {
     val es = day.meal(meal)
+    val accent = mealColor(meal)
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        color = accent.copy(alpha = 0.08f),
         modifier = modifier,
     ) {
         Column(Modifier.padding(8.dp)) {
-            Text(meal.label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(mealIcon(meal), contentDescription = null, tint = accent, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(meal.label, style = MaterialTheme.typography.labelLarge, color = accent)
+            }
             Spacer(Modifier.height(2.dp))
             if (es.isEmpty()) {
                 Text("Sin registros", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -206,7 +215,7 @@ private fun MealDetailBox(meal: Meal, day: DaySummary, modifier: Modifier = Modi
                     Text("${e.displayName} (${e.kcal.kcal()} kcal)", style = MaterialTheme.typography.bodySmall, maxLines = 1)
                 }
                 if (es.size > 2) {
-                    Text("+ ${es.size - 2} más", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    Text("+ ${es.size - 2} más", style = MaterialTheme.typography.labelSmall, color = accent)
                 }
             }
         }

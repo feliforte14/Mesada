@@ -15,34 +15,39 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 object Palette {
-    val Basil = Color(0xFF1F6E52)
-    val Saffron = Color(0xFFE0912B)
-    val Plum = Color(0xFF8A4F7D)
-    val Tomato = Color(0xFFD5503A)
-    val Ink = Color(0xFF13201A)
+    val Basil = Color(0xFF059669)
+    val Saffron = Color(0xFFF97316)
+    val Plum = Color(0xFF9333EA)
+    val Tomato = Color(0xFFDC2626)
+    val Ink = Color(0xFF0F172A)
+    // Acentos por comida, para dar identidad visual a cada tarjeta en "Tu día".
+    val Breakfast = Color(0xFFF59E0B)
+    val Lunch = Color(0xFF059669)
+    val Snack = Color(0xFF9333EA)
+    val Dinner = Color(0xFF2563EB)
 }
 
 private val Light = lightColorScheme(
     primary = Palette.Basil, onPrimary = Color.White,
-    primaryContainer = Color(0xFFCDEBD9), onPrimaryContainer = Color(0xFF0A3A28),
-    secondary = Palette.Saffron, onSecondary = Color(0xFF2A1A00),
-    secondaryContainer = Color(0xFFFCE7C4), onSecondaryContainer = Color(0xFF4A3100),
+    primaryContainer = Color(0xFFCDF2E2), onPrimaryContainer = Color(0xFF033D2A),
+    secondary = Palette.Saffron, onSecondary = Color.White,
+    secondaryContainer = Color(0xFFFFE4CC), onSecondaryContainer = Color(0xFF4A2600),
     tertiary = Palette.Plum, onTertiary = Color.White,
     error = Palette.Tomato, onError = Color.White,
-    background = Color(0xFFF6F3EC), onBackground = Palette.Ink,
+    background = Color(0xFFF3FAF6), onBackground = Palette.Ink,
     surface = Color.White, onSurface = Palette.Ink,
-    surfaceVariant = Color(0xFFE9EEE6), onSurfaceVariant = Color(0xFF51615A),
-    surfaceContainer = Color(0xFFFCFBF7), surfaceContainerHigh = Color(0xFFFFFFFF),
-    outline = Color(0xFFC4CFC5), outlineVariant = Color(0xFFDEE6DC),
-    inverseSurface = Color(0xFF15231C), inverseOnSurface = Color(0xFFEFF4EC),
+    surfaceVariant = Color(0xFFE6F4EC), onSurfaceVariant = Color(0xFF475569),
+    surfaceContainer = Color(0xFFFCFEFD), surfaceContainerHigh = Color(0xFFFFFFFF),
+    outline = Color(0xFFBFDBCE), outlineVariant = Color(0xFFDCEFE4),
+    inverseSurface = Color(0xFF13201A), inverseOnSurface = Color(0xFFEFF4EC),
 )
 
 private val Dark = darkColorScheme(
-    primary = Color(0xFF62CBA0), onPrimary = Color(0xFF04140D),
-    primaryContainer = Color(0xFF1E3B2E), onPrimaryContainer = Color(0xFFB8ECD1),
-    secondary = Color(0xFFF3BC57), onSecondary = Color(0xFF2A1A00),
-    secondaryContainer = Color(0xFF4A3100), onSecondaryContainer = Color(0xFFFCE7C4),
-    tertiary = Color(0xFFCB92BD), onTertiary = Color(0xFF3A2233),
+    primary = Color(0xFF34D399), onPrimary = Color(0xFF04140D),
+    primaryContainer = Color(0xFF065F46), onPrimaryContainer = Color(0xFFB8ECD1),
+    secondary = Color(0xFFFB923C), onSecondary = Color(0xFF2A1500),
+    secondaryContainer = Color(0xFF7C2D12), onSecondaryContainer = Color(0xFFFFE4CC),
+    tertiary = Color(0xFFD8B4FE), onTertiary = Color(0xFF3B0764),
     error = Color(0xFFF08A76), onError = Color(0xFF2A0A04),
     background = Color(0xFF0E1512), onBackground = Color(0xFFE6EEE8),
     surface = Color(0xFF141D18), onSurface = Color(0xFFE6EEE8),

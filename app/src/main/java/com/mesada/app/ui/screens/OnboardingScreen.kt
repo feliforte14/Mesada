@@ -64,7 +64,7 @@ fun OnboardingScreen(
                 Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.SpaceBetween) {
                     Text("Tus datos físicos", style = MaterialTheme.typography.titleLarge)
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         OutlinedTextField(
                             value = weight, onValueChange = { weight = it.filter { c -> c.isDigit() || c == '.' || c == ',' } },
                             label = { Text("Peso (kg)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
